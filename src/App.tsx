@@ -1,15 +1,14 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "./firebase";
-import { LogIn, LogOut, Loader2, ScanFace, UserPlus, FileBarChart, BrainCircuit } from "lucide-react";
+import { LogIn, LogOut, Loader2, ScanFace, UserPlus, FileBarChart } from "lucide-react";
 import Dashboard from "./components/Dashboard";
 import Scanner from "./components/Scanner";
 import Register from "./components/Register";
-import AIInsights from "./components/AIInsights";
 
 export const AuthContext = createContext<{ user: User | null; loading: boolean }>({ user: null, loading: true });
 
-type ViewState = "dashboard" | "scanner" | "register" | "insights";
+type ViewState = "dashboard" | "scanner" | "register";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -82,7 +81,6 @@ export default function App() {
               <NavItem active={view === "dashboard"} onClick={() => setView("dashboard")} icon={<FileBarChart className="w-4 h-4" />}>Dashboard</NavItem>
               <NavItem active={view === "scanner"} onClick={() => setView("scanner")} icon={<ScanFace className="w-4 h-4" />}>Scanner Mode</NavItem>
               <NavItem active={view === "register"} onClick={() => setView("register")} icon={<UserPlus className="w-4 h-4" />}>Register Student</NavItem>
-              <NavItem active={view === "insights"} onClick={() => setView("insights")} icon={<BrainCircuit className="w-4 h-4" />}>AI Insights</NavItem>
             </nav>
 
             <div className="p-4 border-t border-gray-100">
@@ -108,7 +106,6 @@ export default function App() {
             {view === "dashboard" && <Dashboard />}
             {view === "scanner" && <Scanner />}
             {view === "register" && <Register />}
-            {view === "insights" && <AIInsights />}
           </main>
         </div>
     </AuthContext.Provider>
