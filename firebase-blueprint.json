@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "Profile of a registered student, including their facial signature.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Student full name" },
+        "studentId": { "type": "string", "description": "School assigned student ID/Roll" },
+        "faceDescriptor": { 
+          "type": "array", 
+          "items": { "type": "number" },
+          "description": "128-dimensional Float32Array face descriptor represented as an array"
+        },
+        "teacherUid": { "type": "string", "description": "UID of the teacher managing this student" },
+        "createdAt": { "type": "integer", "description": "Creation timestamp" }
+      },
+      "required": ["name", "studentId", "faceDescriptor", "teacherUid"]
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "A single daily attendance record for a student.",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "description": "Reference to the student document ID" },
+        "date": { "type": "string", "description": "Date string in YYYY-MM-DD format" },
+        "status": { "type": "string", "enum": ["present", "absent"] },
+        "timestamp": { "type": "integer" },
+        "teacherUid": { "type": "string", "description": "UID of the teacher" }
+      },
+      "required": ["studentId", "date", "status", "timestamp", "teacherUid"]
+    }
+  },
+  "firestore": {
+    "students/{docId}": {
+      "schema": { "$ref": "Student" },
+      "description": "Collection storing student profiles and face features."
+    },
+    "attendance_records/{recordId}": {
+      "schema": { "$ref": "AttendanceRecord" },
+      "description": "Collection storing daily attendance status."
+    }
+  }
+}

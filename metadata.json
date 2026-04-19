@@ -1,0 +1,8 @@
+{
+  "name": "VisionTrack Attendance",
+  "description": "Industrial grade facial scanning attendance system with AI Insights.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}
