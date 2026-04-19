@@ -54,7 +54,7 @@ export default function App() {
           <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 sm:mb-6">
             <ScanFace className="w-7 h-7 sm:w-8 sm:h-8 text-gray-800" />
           </div>
-          <h1 className="text-xl sm:text-2xl font-medium text-gray-900 mb-2 font-sans tracking-tight">VisionTrack</h1>
+          <h1 className="text-xl sm:text-2xl font-medium text-gray-900 mb-2 font-sans tracking-tight">MC Attendance Box</h1>
           <p className="text-gray-500 text-sm text-center mb-6 sm:mb-8">
             Face scanning attendance system. Sign in to continue.
           </p>

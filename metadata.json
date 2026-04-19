@@ -1,5 +1,5 @@
 {
-  "name": "VisionTrack Attendance",
+  "name": "MC Attendance Box",
   "description": "Industrial grade facial scanning attendance system with AI Insights.",
   "requestFramePermissions": [
     "camera"
