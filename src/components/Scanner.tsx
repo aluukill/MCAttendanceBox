@@ -131,22 +131,22 @@ export default function Scanner() {
   }, [isReady, user]);
 
   return (
-    <div className="p-8 max-w-5xl mx-auto flex flex-col h-full">
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">Scanner Mode</h2>
+    <div className="p-4 md:p-8 max-w-5xl mx-auto flex flex-col h-full">
+      <div className="mb-6 md:mb-8">
+        <h2 className="text-xl md:text-2xl font-semibold text-gray-900 tracking-tight">Scanner Mode</h2>
         <p className="text-gray-500 mt-1">Live facial recognition. Students are automatically logged as present.</p>
       </div>
 
-      <div className="flex-1 grid lg:grid-cols-[2fr_1fr] gap-8 min-h-[500px]">
+      <div className="flex-1 grid md:grid-cols-[2fr_1fr] gap-4 md:gap-8 min-h-[400px] md:min-h-[500px]">
         {/* Scanner Feed */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col relative overflow-hidden">
+        <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-gray-100 flex flex-col relative overflow-hidden">
           {!isReady ? (
             <div className="flex-1 flex flex-col items-center justify-center text-gray-500 bg-gray-50 rounded-2xl border border-gray-100">
               <Loader2 className="w-8 h-8 animate-spin mb-4 text-gray-900" />
               <p className="font-medium text-sm">{initStatus}</p>
             </div>
           ) : (
-            <div className="relative flex-1 bg-black rounded-2xl overflow-hidden flex items-center justify-center">
+            <div className="relative flex-1 bg-black rounded-2xl overflow-hidden flex items-center justify-center aspect-video md:aspect-auto">
                <Webcam
                   ref={webcamRef}
                   audio={false}
@@ -167,25 +167,25 @@ export default function Scanner() {
         </div>
 
         {/* Recent Recognitions */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col">
-          <div className="flex items-center gap-3 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Today's Log</h3>
+        <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-gray-100 flex flex-col">
+          <div className="flex items-center gap-3 mb-4 md:mb-6">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900">Today's Log</h3>
             <span className="bg-green-100 text-green-800 text-xs font-bold px-2.5 py-0.5 rounded-full">
               {recognizedStudents.length} entries
             </span>
           </div>
 
-          <div className="flex-1 overflow-y-auto pr-2 space-y-3">
+          <div className="flex-1 overflow-y-auto pr-2 space-y-2 md:space-y-3 max-h-[200px] md:max-h-none">
             {recognizedStudents.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-gray-400">
                 <ShieldCheck className="w-12 h-12 mb-3 text-gray-200" />
                 <p className="text-sm">No faces scanned yet today</p>
               </div>
             ) : (
-              recognizedStudents.map((entry, idx) => (
-                <div key={`${entry.id}-${idx}`} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl border border-gray-100 animate-in fade-in slide-in-from-top-2">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 text-green-700">
-                    <UserCheck className="w-5 h-5" />
+               recognizedStudents.map((entry, idx) => (
+                <div key={`${entry.id}-${idx}`} className="flex items-center gap-3 md:gap-4 p-2 md:p-3 bg-gray-50 rounded-xl border border-gray-100 animate-in fade-in slide-in-from-top-2">
+                   <div className="w-8 h-8 md:w-10 md:h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 text-green-700">
+                     <UserCheck className="w-4 h-4 md:w-5 md:h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-900 truncate">{entry.name}</p>

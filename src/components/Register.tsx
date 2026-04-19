@@ -78,15 +78,15 @@ export default function Register() {
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto flex flex-col h-full">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto flex flex-col h-full">
       <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">Register Student</h2>
+        <h2 className="text-xl md:text-2xl font-semibold text-gray-900 tracking-tight">Register Student</h2>
         <p className="text-gray-500 mt-1">Enroll a new student. Fill the form below and camera will activate.</p>
       </div>
 
-      <div className="flex-1 grid lg:grid-cols-[2fr_1fr] gap-8 min-h-[500px]">
+      <div className="flex-1 grid md:grid-cols-[2fr_1fr] gap-4 md:gap-8 min-h-[400px] md:min-h-[500px]">
         {/* Camera Area - same style as Scanner */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col relative overflow-hidden">
+        <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-gray-100 flex flex-col relative overflow-hidden">
           {!showCamera ? (
             <div className="flex-1 flex flex-col items-center justify-center text-gray-500 bg-gray-50 rounded-2xl border border-gray-100">
               <User className="w-12 h-12 mb-4 text-gray-300" />
@@ -112,7 +112,7 @@ export default function Register() {
         </div>
 
         {/* Form Area */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col">
+        <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-gray-100 flex flex-col">
           <form onSubmit={handleRegister} className="flex flex-col h-full">
             <div className="space-y-5">
               <div>
@@ -121,7 +121,7 @@ export default function Register() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:bg-white transition-all text-sm"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 md:px-4 md:py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:bg-white transition-all text-sm"
                   placeholder="Jane Doe"
                 />
               </div>
@@ -131,7 +131,7 @@ export default function Register() {
                   type="text"
                   value={studentId}
                   onChange={(e) => setStudentId(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:bg-white transition-all text-sm"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 md:px-4 md:py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:bg-white transition-all text-sm"
                   placeholder="STU-1001"
                 />
               </div>
@@ -146,7 +146,7 @@ export default function Register() {
               <button
                 type="submit"
                 disabled={!showCamera || isRegistering}
-                className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 text-white rounded-xl py-3.5 px-6 font-medium transition-colors mt-auto"
+                className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 text-white rounded-xl py-3 px-4 md:py-3.5 md:px-6 font-medium transition-colors mt-auto"
               >
                 {isRegistering ? (
                   <>
