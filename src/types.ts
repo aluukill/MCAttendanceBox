@@ -10,8 +10,9 @@ export interface Student {
 export interface AttendanceRecord {
   id: string;
   studentId: string;
+  studentName?: string;
   date: string; // YYYY-MM-DD
-  status: 'present' | 'absent';
+  status: 'present' | 'late_present' | 'absent';
   timestamp: number;
   teacherUid: string;
 }

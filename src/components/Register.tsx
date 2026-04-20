@@ -5,7 +5,7 @@ import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { AuthContext } from '../App';
 import { loadFaceApiModels } from '../lib/face-api-loader';
-import { Loader2, Camera, CheckCircle2, AlertCircle, ScanFace, User, X } from 'lucide-react';
+import { Loader2, Camera, CheckCircle2, AlertCircle, ScanFace, User, X, RotateCcw } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 
 export default function Register() {
@@ -16,6 +16,7 @@ export default function Register() {
   const [status, setStatus] = useState<{ type: 'success' | 'error' | 'idle', message: string }>({ type: 'idle', message: '' });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [scanStatus, setScanStatus] = useState<'ready' | 'scanning' | 'success' | 'error'>('ready');
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
   const webcamRef = useRef<Webcam>(null);
   const scanIntervalRef = useRef<number | null>(null);
@@ -35,6 +36,10 @@ export default function Register() {
       scanIntervalRef.current = null;
     }
     setIsDialogOpen(false);
+  };
+
+  const toggleCamera = () => {
+    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
   };
 
   useEffect(() => {
@@ -176,7 +181,7 @@ export default function Register() {
       <Dialog.Root open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl p-6 w-full max-w-md z-50 shadow-2xl">
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl p-6 w-full max-w-sm z-50 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <Dialog.Title className="text-lg font-semibold text-gray-900">Scan Face</Dialog.Title>
               <Dialog.Close asChild>
@@ -186,16 +191,22 @@ export default function Register() {
               </Dialog.Close>
             </div>
 
-            <div className="relative aspect-video bg-black rounded-2xl overflow-hidden mb-4">
+            <div className="relative aspect-square bg-black rounded-2xl overflow-hidden mb-4 mx-auto max-w-xs">
               <Webcam
                 ref={webcamRef}
                 audio={false}
                 screenshotFormat="image/jpeg"
-                videoConstraints={{ facingMode: "user" }}
-                mirrored={false}
+                videoConstraints={{ facingMode }}
+                mirrored={true}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 pointer-events-none border-[1px] border-dashed border-white/20 m-8 rounded-[40px] opacity-50" />
+              <button
+                onClick={toggleCamera}
+                className="absolute bottom-4 right-4 p-3 bg-white/20 backdrop-blur-md rounded-full hover:bg-white/30 transition-colors"
+              >
+                <RotateCcw className="w-5 h-5 text-white" />
+              </button>
+              <div className="absolute inset-0 pointer-events-none border-[1px] border-dashed border-white/30 m-8 rounded-full opacity-50" />
               
               {scanStatus === 'scanning' && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/70 px-4 py-2 rounded-full">

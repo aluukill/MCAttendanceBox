@@ -1,14 +1,15 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "./firebase";
-import { LogIn, LogOut, Loader2, ScanFace, UserPlus, FileBarChart, Menu, X } from "lucide-react";
+import { LogIn, LogOut, Loader2, ScanFace, UserPlus, FileBarChart, Menu, X, Users } from "lucide-react";
 import Dashboard from "./components/Dashboard";
 import Scanner from "./components/Scanner";
 import Register from "./components/Register";
+import Students from "./components/Students";
 
 export const AuthContext = createContext<{ user: User | null; loading: boolean }>({ user: null, loading: true });
 
-type ViewState = "dashboard" | "scanner" | "register";
+type ViewState = "dashboard" | "scanner" | "register" | "students";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -128,6 +129,13 @@ export default function App() {
             >
               Register
             </NavItem>
+            <NavItem 
+              active={view === "students"} 
+              onClick={() => { setView("students"); closeSidebar(); }} 
+              icon={<Users className="w-5 h-5" />}
+            >
+              Students
+            </NavItem>
           </nav>
 
           <div className="p-3 border-t border-gray-100">
@@ -157,6 +165,7 @@ export default function App() {
           {view === "dashboard" && <Dashboard />}
           {view === "scanner" && <Scanner />}
           {view === "register" && <Register />}
+          {view === "students" && <Students />}
         </main>
       </div>
     </AuthContext.Provider>

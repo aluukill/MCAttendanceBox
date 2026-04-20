@@ -1,13 +1,18 @@
 import { useEffect, useRef, useState, useContext } from 'react';
 import Webcam from 'react-webcam';
 import * as faceapi from '@vladmandic/face-api';
-import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { AuthContext } from '../App';
 import { loadFaceApiModels } from '../lib/face-api-loader';
 import { Student } from '../types';
-import { Loader2, Camera, ShieldCheck, UserCheck } from 'lucide-react';
+import { Loader2, Camera, ShieldCheck, UserCheck, RotateCcw, Clock } from 'lucide-react';
 import { format } from 'date-fns';
+import * as Dialog from '@radix-ui/react-dialog';
+
+interface Settings {
+  lateCutoffTime: string;
+}
 
 export default function Scanner() {
   const { user } = useContext(AuthContext);
@@ -15,11 +20,43 @@ export default function Scanner() {
   
   const [initStatus, setInitStatus] = useState<string>('Loading models...');
   const [isReady, setIsReady] = useState(false);
-  const [recognizedStudents, setRecognizedStudents] = useState<{ id: string, name: string, time: Date }[]>([]);
+  const [recognizedStudents, setRecognizedStudents] = useState<{ id: string, name: string, time: Date, status: string }[]>([]);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [lateCutoffTime, setLateCutoffTime] = useState('09:00');
   
   const faceMatcherRef = useRef<faceapi.FaceMatcher | null>(null);
   const loggedTodayRef = useRef<Set<string>>(new Set());
   const scanningTimerRef = useRef<any>(null);
+
+  const toggleCamera = () => {
+    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+  };
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (!user) return;
+      const settingsDoc = await getDoc(doc(db, 'settings', user.uid));
+      if (settingsDoc.exists()) {
+        const data = settingsDoc.data() as Settings;
+        setLateCutoffTime(data.lateCutoffTime || '09:00');
+      }
+    };
+    loadSettings();
+  }, [user]);
+
+  const saveSettings = async () => {
+    if (!user) return;
+    await setDoc(doc(db, 'settings', user.uid), { lateCutoffTime }, { merge: true });
+    setSettingsOpen(false);
+  };
+
+  const isLate = (time: Date): boolean => {
+    const [hours, minutes] = lateCutoffTime.split(':').map(Number);
+    const cutoffDate = new Date(time);
+    cutoffDate.setHours(hours, minutes, 0, 0);
+    return time > cutoffDate;
+  };
 
   useEffect(() => {
     let active = true;
@@ -34,7 +71,6 @@ export default function Scanner() {
         
         if (!user) return;
         
-        // Load students
         const q = query(collection(db, 'students'), where('teacherUid', '==', user.uid));
         const snap = await getDocs(q);
         
@@ -50,20 +86,30 @@ export default function Scanner() {
           return;
         }
 
-        faceMatcherRef.current = new faceapi.FaceMatcher(labeledDescriptors, 0.5); // 0.5 distance threshold
+        faceMatcherRef.current = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
         
         if (!active) return;
         
-        // Load today's attendance to populate loggedTodayRef (so we don't double log on refresh)
         const todayStr = format(new Date(), 'yyyy-MM-dd');
         const attQ = query(collection(db, 'attendance_records'), 
           where('teacherUid', '==', user.uid),
-          where('date', '==', todayStr),
-          where('status', '==', 'present')
+          where('date', '==', todayStr)
         );
         const attSnap = await getDocs(attQ);
         attSnap.forEach(doc => {
           loggedTodayRef.current.add(doc.data().studentId);
+          const attendanceData = doc.data();
+          setRecognizedStudents(prev => {
+            if (!prev.find(s => s.id === attendanceData.studentId)) {
+              return [...prev, {
+                id: attendanceData.studentId,
+                name: attendanceData.studentName,
+                time: new Date(attendanceData.timestamp),
+                status: attendanceData.status
+              }];
+            }
+            return prev;
+          });
         });
 
         setIsReady(true);
@@ -89,7 +135,7 @@ export default function Scanner() {
       if (!webcamRef.current || !webcamRef.current.video) return;
       
       const videoEl = webcamRef.current.video;
-      if (videoEl.readyState !== 4) return; // not ready
+      if (videoEl.readyState !== 4) return;
 
       try {
         const detections = await faceapi.detectAllFaces(videoEl, new faceapi.TinyFaceDetectorOptions())
@@ -105,40 +151,50 @@ export default function Scanner() {
             const [studentDocId, studentName] = bestMatch.label.split('||');
             
             if (!loggedTodayRef.current.has(studentDocId)) {
-              // Log attendance
               loggedTodayRef.current.add(studentDocId);
               
-              setRecognizedStudents(prev => [{ id: studentDocId, name: studentName, time: new Date() }, ...prev]);
+              const now = new Date();
+              const status = isLate(now) ? 'late_present' : 'present';
               
               await addDoc(collection(db, 'attendance_records'), {
                 studentId: studentDocId,
-                date: format(new Date(), 'yyyy-MM-dd'),
-                status: 'present',
+                studentName,
+                date: format(now, 'yyyy-MM-dd'),
+                status,
                 timestamp: Date.now(),
                 teacherUid: user?.uid
               });
+              
+              setRecognizedStudents(prev => [{ id: studentDocId, name: studentName, time: now, status }, ...prev]);
             }
           }
         });
       } catch (e) {
-        // ignore occasional inference errors during frame drops
+        // ignore
       }
-    }, 1000); // scan every 1 second
+    }, 1000);
 
     return () => {
       if (scanningTimerRef.current) clearInterval(scanningTimerRef.current);
     };
-  }, [isReady, user]);
+  }, [isReady, user, lateCutoffTime]);
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto flex flex-col h-full">
-      <div className="mb-6 md:mb-8">
-        <h2 className="text-xl md:text-2xl font-semibold text-gray-900 tracking-tight">Scanner Mode</h2>
-        <p className="text-gray-500 mt-1">Live facial recognition. Students are automatically logged as present.</p>
+      <div className="flex items-center justify-between mb-6 md:mb-8">
+        <div>
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-900 tracking-tight">Scanner Mode</h2>
+          <p className="text-gray-500 mt-1">Live facial recognition. Students are automatically logged.</p>
+        </div>
+        <button
+          onClick={() => setSettingsOpen(true)}
+          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+        >
+          <Clock className="w-5 h-5 text-gray-500" />
+        </button>
       </div>
 
       <div className="flex-1 grid md:grid-cols-[2fr_1fr] gap-4 md:gap-8 min-h-[400px] md:min-h-[500px]">
-        {/* Scanner Feed */}
         <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-gray-100 flex flex-col relative overflow-hidden">
           {!isReady ? (
             <div className="flex-1 flex flex-col items-center justify-center text-gray-500 bg-gray-50 rounded-2xl border border-gray-100">
@@ -146,28 +202,33 @@ export default function Scanner() {
               <p className="font-medium text-sm">{initStatus}</p>
             </div>
           ) : (
-            <div className="relative flex-1 bg-black rounded-2xl overflow-hidden flex items-center justify-center aspect-video md:aspect-auto">
-<Webcam
-                   ref={webcamRef}
-                   audio={false}
-                   screenshotFormat="image/jpeg"
-                   videoConstraints={{ facingMode: "user" }}
-                   mirrored={false}
-                   className="w-full h-full object-cover"
-                 />
-                
-                {/* HUD Overlay */}
-                <div className="absolute top-6 left-6 flex items-center gap-2 bg-black/50 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 text-white text-xs font-semibold uppercase tracking-wider">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  Scanner Active
-                </div>
-
-                <div className="absolute inset-0 pointer-events-none border-[1px] border-dashed border-white/20 m-12 rounded-[50px] opacity-30"></div>
+            <div className="relative flex-1 bg-black rounded-2xl overflow-hidden flex items-center justify-center">
+              <div className="relative aspect-square max-w-sm mx-auto w-full">
+                <Webcam
+                  ref={webcamRef}
+                  audio={false}
+                  screenshotFormat="image/jpeg"
+                  videoConstraints={{ facingMode }}
+                  mirrored={true}
+                  className="w-full h-full object-cover rounded-2xl"
+                />
+                <button
+                  onClick={toggleCamera}
+                  className="absolute bottom-4 right-4 p-3 bg-white/20 backdrop-blur-md rounded-full hover:bg-white/30 transition-colors"
+                >
+                  <RotateCcw className="w-5 h-5 text-white" />
+                </button>
+                <div className="absolute inset-0 pointer-events-none border-[1px] border-dashed border-white/30 m-8 rounded-full opacity-50" />
+              </div>
+              
+              <div className="absolute top-6 left-6 flex items-center gap-2 bg-black/50 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 text-white text-xs font-semibold uppercase tracking-wider">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                Scanner Active
+              </div>
             </div>
           )}
         </div>
 
-        {/* Recent Recognitions */}
         <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-gray-100 flex flex-col">
           <div className="flex items-center gap-3 mb-4 md:mb-6">
             <h3 className="text-base md:text-lg font-semibold text-gray-900">Today's Log</h3>
@@ -185,19 +246,55 @@ export default function Scanner() {
             ) : (
                recognizedStudents.map((entry, idx) => (
                 <div key={`${entry.id}-${idx}`} className="flex items-center gap-3 md:gap-4 p-2 md:p-3 bg-gray-50 rounded-xl border border-gray-100 animate-in fade-in slide-in-from-top-2">
-                   <div className="w-8 h-8 md:w-10 md:h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 text-green-700">
+                   <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                     entry.status === 'late_present' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+                   }`}>
                      <UserCheck className="w-4 h-4 md:w-5 md:h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{entry.name}</p>
-                    <p className="text-xs text-gray-500">{format(entry.time, 'h:mm:ss a')}</p>
-                  </div>
+                   </div>
+                   <div className="flex-1 min-w-0">
+                     <p className="font-medium text-gray-900 truncate">{entry.name}</p>
+                     <p className="text-xs text-gray-500">{format(entry.time, 'h:mm:ss a')}</p>
+                   </div>
+                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                     entry.status === 'late_present' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+                   }`}>
+                     {entry.status === 'late_present' ? 'Late' : 'Present'}
+                   </span>
                 </div>
               ))
             )}
           </div>
         </div>
       </div>
+
+      <Dialog.Root open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl p-6 w-full max-w-sm z-50 shadow-2xl">
+            <Dialog.Title className="text-lg font-semibold text-gray-900 mb-4">Late Cutoff Time</Dialog.Title>
+            <p className="text-sm text-gray-500 mb-4">Students marked present after this time will be labeled as "Late Present"</p>
+            <input
+              type="time"
+              value={lateCutoffTime}
+              onChange={(e) => setLateCutoffTime(e.target.value)}
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:bg-white mb-4"
+            />
+            <div className="flex gap-3">
+              <Dialog.Close asChild>
+                <button className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors font-medium">
+                  Cancel
+                </button>
+              </Dialog.Close>
+              <button
+                onClick={saveSettings}
+                className="flex-1 px-4 py-3 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition-colors font-medium"
+              >
+                Save
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }
