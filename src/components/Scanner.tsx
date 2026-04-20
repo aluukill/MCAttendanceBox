@@ -22,7 +22,8 @@ export default function Scanner() {
   
   const [initStatus, setInitStatus] = useState<string>('Loading models...');
   const [isReady, setIsReady] = useState(false);
-  const [recognizedStudents, setRecognizedStudents] = useState<{ id: string, name: string, time: Date, status: string }[]>([]);
+  const [scanningStarted, setScanningStarted] = useState(false);
+  const [recognizedStudents, setRecognizedStudents] = useState<{ id: string, name: string, time: Date, status: string, alreadyTracked?: boolean }[]>([]);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [lateCutoffTime, setLateCutoffTime] = useState('09:00');
@@ -149,7 +150,7 @@ export default function Scanner() {
   }, [user]);
 
   useEffect(() => {
-    if (!isReady || !webcamRef.current) return;
+    if (!isReady || !webcamRef.current || !scanningStarted) return;
 
     scanningTimerRef.current = setInterval(async () => {
       if (!webcamRef.current || !webcamRef.current.video) return;
@@ -186,6 +187,10 @@ export default function Scanner() {
               });
               
               setRecognizedStudents(prev => [{ id: studentDocId, name: studentName, time: now, status }, ...prev]);
+            } else {
+              setRecognizedStudents(prev => prev.map(s => 
+                s.id === studentDocId ? { ...s, alreadyTracked: true } : s
+              ));
             }
           }
         });
@@ -197,22 +202,37 @@ export default function Scanner() {
     return () => {
       if (scanningTimerRef.current) clearInterval(scanningTimerRef.current);
     };
-  }, [isReady, user]);
+  }, [isReady, user, scanningStarted]);
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto flex flex-col h-full">
       <div className="flex items-center justify-between mb-6 md:mb-8">
         <div>
           <h2 className="text-xl md:text-2xl font-semibold text-gray-900 tracking-tight">Scanner Mode</h2>
-          <p className="text-gray-500 mt-1">Live facial recognition. Students are automatically logged.</p>
+          <p className="text-gray-500 mt-1">{scanningStarted ? 'Scanning in progress...' : 'Set time first, then start scanning.'}</p>
         </div>
         <button
           onClick={() => setSettingsOpen(true)}
           className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+          title="Set late cutoff time"
         >
           <Clock className="w-5 h-5 text-gray-500" />
         </button>
       </div>
+
+      {!scanningStarted && isReady && (
+        <div className="mb-4 flex justify-center">
+          <button
+            onClick={() => {
+              setScanningStarted(true);
+            }}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+          >
+            <Camera className="w-5 h-5" />
+            Start Scanning
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 grid md:grid-cols-[2fr_1fr] gap-4 md:gap-8 min-h-[400px] md:min-h-[500px]">
         <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-gray-100 flex flex-col relative overflow-hidden">
@@ -242,8 +262,17 @@ export default function Scanner() {
               </div>
               
               <div className="absolute top-6 left-6 flex items-center gap-2 bg-black/50 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 text-white text-xs font-semibold uppercase tracking-wider">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                Scanner Active
+                {scanningStarted ? (
+                  <>
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    Scanning Active
+                  </>
+                ) : (
+                  <>
+                    <div className="w-2 h-2 rounded-full bg-amber-500" />
+                    Ready - Press Start
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -253,8 +282,13 @@ export default function Scanner() {
           <div className="flex items-center gap-3 mb-4 md:mb-6">
             <h3 className="text-base md:text-lg font-semibold text-gray-900">Today's Log</h3>
             <span className="bg-green-100 text-green-800 text-xs font-bold px-2.5 py-0.5 rounded-full">
-              {recognizedStudents.length} entries
+              {recognizedStudents.filter(e => !e.alreadyTracked).length} new
             </span>
+            {recognizedStudents.some(e => e.alreadyTracked) && (
+              <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                {recognizedStudents.filter(e => e.alreadyTracked).length} repeat
+              </span>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto pr-2 space-y-2 md:space-y-3 max-h-[200px] md:max-h-none">
@@ -263,26 +297,26 @@ export default function Scanner() {
                 <ShieldCheck className="w-12 h-12 mb-3 text-gray-200" />
                 <p className="text-sm">No faces scanned yet today</p>
               </div>
-            ) : (
-               recognizedStudents.map((entry, idx) => (
-                <div key={`${entry.id}-${idx}`} className="flex items-center gap-3 md:gap-4 p-2 md:p-3 bg-gray-50 rounded-xl border border-gray-100 animate-in fade-in slide-in-from-top-2">
-                   <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                     entry.status === 'late_present' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
-                   }`}>
-                     <UserCheck className="w-4 h-4 md:w-5 md:h-5" />
-                   </div>
-                   <div className="flex-1 min-w-0">
-                     <p className="font-medium text-gray-900 truncate">{entry.name}</p>
-                     <p className="text-xs text-gray-500">{format(entry.time, 'h:mm:ss a')}</p>
-                   </div>
-                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                     entry.status === 'late_present' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
-                   }`}>
-                     {entry.status === 'late_present' ? 'Late' : 'Present'}
-                   </span>
-                </div>
-              ))
-            )}
+) : (
+               <>{recognizedStudents.filter(e => !e.alreadyTracked).map((entry, idx) => (
+                  <div key={`${entry.id}-${idx}`} className="flex items-center gap-3 md:gap-4 p-2 md:p-3 bg-gray-50 rounded-xl border border-gray-100 animate-in fade-in slide-in-from-top-2">
+                     <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                       entry.status === 'late_present' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+                     }`}>
+                       <UserCheck className="w-4 h-4 md:w-5 md:h-5" />
+                     </div>
+                     <div className="flex-1 min-w-0">
+                       <p className="font-medium text-gray-900 truncate">{entry.name}</p>
+                       <p className="text-xs text-gray-500">{format(entry.time, 'h:mm:ss a')}</p>
+                     </div>
+                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                       entry.status === 'late_present' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+                     }`}>
+                       {entry.status === 'late_present' ? 'Late' : 'Present'}
+                     </span>
+                  </div>
+                ))}</>
+             )}
           </div>
         </div>
       </div>
