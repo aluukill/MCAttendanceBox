@@ -42,9 +42,14 @@ service cloud.firestore {
              data.keys().size() == 5 &&
              data.studentId is string && data.studentId.size() > 0 && data.studentId.size() <= 128 &&
              data.date is string && data.date.size() == 10 && data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
-             data.status in ['present', 'absent'] &&
+             data.status in ['present', 'absent', 'late_present'] &&
              data.timestamp is number &&
              data.teacherUid == request.auth.uid;
+    }
+
+    match /settings/{docId} {
+      allow read: if isSignedIn() && docId == request.auth.uid;
+      allow write: if isSignedIn() && docId == request.auth.uid;
     }
 
     match /attendance_records/{recordId} {
@@ -56,7 +61,7 @@ service cloud.firestore {
                     incoming().studentId == existing().studentId &&
                     incoming().date == existing().date &&
                     incoming().diff(existing()).affectedKeys().hasOnly(['status', 'timestamp']) &&
-                    incoming().status in ['present', 'absent'] &&
+                    incoming().status in ['present', 'absent', 'late_present'] &&
                     incoming().timestamp is number;
       allow delete: if false; // Logs are append-only mostly, no delete
       allow list: if isSignedIn() && resource.data.teacherUid == request.auth.uid;

@@ -53,14 +53,18 @@ export default function Scanner() {
   }, [user]);
 
   const saveSettings = async () => {
-    if (!user) return;
+    console.log('Saving settings, user:', user?.uid, 'time:', lateCutoffTime);
+    if (!user || !user.uid) {
+      showToast('Not logged in', 'error');
+      return;
+    }
     try {
       await setDoc(doc(db, 'settings', user.uid), { lateCutoffTime }, { merge: true });
       setSettingsOpen(false);
-      showToast('Settings saved', 'success');
-    } catch (e) {
-      console.error(e);
-      showToast('Failed to save settings', 'error');
+      showToast('Settings saved successfully', 'success');
+    } catch (e: any) {
+      console.error('Save error:', e);
+      showToast('Failed to save: ' + e.message, 'error');
     }
   };
 
