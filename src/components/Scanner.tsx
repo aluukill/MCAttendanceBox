@@ -28,6 +28,7 @@ export default function Scanner() {
   const [recognizedStudents, setRecognizedStudents] = useState<{ id: string, name: string, time: Date, status: string, alreadyTracked?: boolean }[]>([]);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showTimePrompt, setShowTimePrompt] = useState(false);
   const [lateCutoffTime, setLateCutoffTime] = useState('09:00');
   
   const faceMatcherRef = useRef<faceapi.FaceMatcher | null>(null);
@@ -62,6 +63,12 @@ export default function Scanner() {
     };
     loadSettings();
   }, [user]);
+
+  useEffect(() => {
+    if (!timeConfigured && isReady) {
+      setShowTimePrompt(true);
+    }
+  }, [timeConfigured, isReady]);
 
   const saveSettings = async () => {
     if (!user || !user.uid) {
@@ -111,13 +118,20 @@ export default function Scanner() {
         }
         
         const labeledDescriptors: faceapi.LabeledFaceDescriptors[] = [];
+        let studentCount = 0;
         snap.forEach(d => {
           const data = d.data() as Student;
-          const descArray = new Float32Array(data.faceDescriptor);
-          labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(d.id + '||' + data.name, [descArray]));
+          if (data.faceDescriptor && Array.isArray(data.faceDescriptor) && data.faceDescriptor.length === 128) {
+            const descArray = new Float32Array(data.faceDescriptor);
+            labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(d.id + '||' + data.name, [descArray]));
+            studentCount++;
+          } else {
+            console.warn('Invalid face descriptor for student:', d.id, data);
+          }
         });
+        console.log('Loaded', studentCount, 'students with face descriptors');
 
-        faceMatcherRef.current = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
+        faceMatcherRef.current = new faceapi.FaceMatcher(labeledDescriptors, 0.6);
         
         if (!active) return;
         
@@ -157,14 +171,18 @@ export default function Scanner() {
       if (videoEl.readyState !== 4) return;
 
       try {
-        const detections = await faceapi.detectAllFaces(videoEl, new faceapi.TinyFaceDetectorOptions())
+        const detections = await faceapi.detectAllFaces(videoEl, new faceapi.SsdMobilenetv1Options())
           .withFaceLandmarks()
           .withFaceDescriptors();
 
+        console.log('Faces detected:', detections.length);
+        
         if (detections.length === 0) return;
 
         for (const det of detections) {
+          console.log('Descriptor length:', det.descriptor.length);
           const bestMatch = faceMatcherRef.current!.findBestMatch(det.descriptor);
+          console.log('Best match:', bestMatch.label, 'distance:', bestMatch.distance);
           
           if (bestMatch.label !== 'unknown') {
             const [studentDocId, studentName] = bestMatch.label.split('||');
@@ -329,6 +347,38 @@ export default function Scanner() {
           </div>
         </div>
       </div>
+
+      <Dialog.Root open={showTimePrompt && !timeConfigured && isReady} onOpenChange={(open) => {
+          if (!open && !timeConfigured) {
+            setShowTimePrompt(false);
+          }
+        }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" />
+<Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl p-6 w-full max-w-sm z-50 shadow-2xl">
+            <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center mb-4">
+              <Clock className="w-6 h-6 text-amber-600" />
+            </div>
+            <Dialog.Title className="text-lg font-semibold text-gray-900 mb-2">Set Time First</Dialog.Title>
+            <p className="text-sm text-gray-500 mb-4">Please set the late cutoff time before starting the scanner. Students arriving after this time will be marked as "Late Present".</p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Late Cutoff Time</label>
+              <input
+                type="time"
+                value={lateCutoffTime}
+                onChange={(e) => setLateCutoffTime(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:bg-white"
+              />
+            </div>
+            <button
+              onClick={saveSettings}
+              className="w-full px-4 py-3 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition-colors font-medium"
+            >
+              Set Time & Continue
+            </button>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       <Dialog.Root open={settingsOpen} onOpenChange={setSettingsOpen}>
         <Dialog.Portal>

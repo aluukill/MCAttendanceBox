@@ -61,7 +61,7 @@ export default function Register() {
           if (videoEl.readyState !== 4) return;
 
           try {
-            const detections = await faceapi.detectAllFaces(videoEl, new faceapi.TinyFaceDetectorOptions())
+            const detections = await faceapi.detectAllFaces(videoEl, new faceapi.SsdMobilenetv1Options())
               .withFaceLandmarks()
               .withFaceDescriptors();
 
