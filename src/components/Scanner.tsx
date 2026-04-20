@@ -59,12 +59,14 @@ export default function Scanner() {
       return;
     }
     try {
-      await setDoc(doc(db, 'settings', user.uid), { lateCutoffTime }, { merge: true });
+      const settingsRef = doc(db, 'settings', user.uid);
+      await setDoc(settingsRef, { lateCutoffTime }, { merge: true });
+      await new Promise(resolve => setTimeout(resolve, 500));
       setSettingsOpen(false);
-      showToast('Settings saved successfully', 'success');
+      showToast('Settings saved', 'success');
     } catch (e: any) {
       console.error('Save error:', e);
-      showToast('Failed to save: ' + e.message, 'error');
+      showToast('Error: ' + e.message, 'error');
     }
   };
 
