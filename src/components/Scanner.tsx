@@ -147,13 +147,14 @@ export default function Scanner() {
             </div>
           ) : (
             <div className="relative flex-1 bg-black rounded-2xl overflow-hidden flex items-center justify-center aspect-video md:aspect-auto">
-               <Webcam
-                  ref={webcamRef}
-                  audio={false}
-                  screenshotFormat="image/jpeg"
-                  videoConstraints={{ facingMode: "user" }}
-                  className="w-full h-full object-cover"
-                />
+<Webcam
+                   ref={webcamRef}
+                   audio={false}
+                   screenshotFormat="image/jpeg"
+                   videoConstraints={{ facingMode: "user" }}
+                   mirrored={false}
+                   className="w-full h-full object-cover"
+                 />
                 
                 {/* HUD Overlay */}
                 <div className="absolute top-6 left-6 flex items-center gap-2 bg-black/50 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 text-white text-xs font-semibold uppercase tracking-wider">
