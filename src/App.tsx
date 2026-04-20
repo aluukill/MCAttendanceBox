@@ -72,106 +72,104 @@ export default function App() {
     );
   }
 
-  return (
+return (
     <AuthContext.Provider value={{ user, loading }}>
       <ToastProvider>
         <ConfirmDialogProvider>
-          <div className="min-h-screen bg-[#f5f5f5] font-sans flex">
-        {/* Mobile Header */}
-        <header className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
-          <div className="flex items-center gap-2">
-            <ScanFace className="w-5 h-5 text-gray-900" />
-            <span className="font-semibold text-gray-900 text-sm">MC Attendance Box</span>
-          </div>
-          <button 
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </header>
-
-        {/* Mobile Overlay */}
-        {sidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black/50 z-30 md:hidden"
-            onClick={closeSidebar}
-          />
-        )}
-
-        {/* Sidebar */}
-        <aside className={`
-          fixed md:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-200 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          md:translate-x-0
-        `}>
-          <div className="p-4 border-b border-gray-100 flex items-center gap-3">
-            <ScanFace className="w-6 h-6 text-gray-900" />
-            <span className="font-semibold text-gray-900 tracking-tight">MC Attendance Box</span>
-          </div>
-          
-          <nav className="flex-1 p-3 space-y-1">
-            <NavItem 
-              active={view === "dashboard"} 
-              onClick={() => { setView("dashboard"); closeSidebar(); }} 
-              icon={<FileBarChart className="w-5 h-5" />}
-            >
-              Dashboard
-            </NavItem>
-            <NavItem 
-              active={view === "scanner"} 
-              onClick={() => { setView("scanner"); closeSidebar(); }} 
-              icon={<ScanFace className="w-5 h-5" />}
-            >
-              Scanner
-            </NavItem>
-            <NavItem 
-              active={view === "register"} 
-              onClick={() => { setView("register"); closeSidebar(); }} 
-              icon={<UserPlus className="w-5 h-5" />}
-            >
-              Register
-            </NavItem>
-            <NavItem 
-              active={view === "students"} 
-              onClick={() => { setView("students"); closeSidebar(); }} 
-              icon={<Users className="w-5 h-5" />}
-            >
-              Students
-            </NavItem>
-          </nav>
-
-          <div className="p-3 border-t border-gray-100">
-            <div className="flex items-center gap-3 mb-3 px-2">
-              <img 
-                src={user.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${user.displayName}`} 
-                alt="Profile" 
-                className="w-9 h-9 rounded-full" 
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{user.displayName}</p>
-                <p className="text-xs text-gray-500 truncate">{user.email}</p>
+          <div className="min-h-screen bg-[#f5f5f5] font-sans">
+            {/* Mobile Header */}
+            <header className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
+              <div className="flex items-center gap-2">
+                <ScanFace className="w-5 h-5 text-gray-900" />
+                <span className="font-semibold text-gray-900 text-sm">MC Attendance Box</span>
               </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg py-2.5 px-3 transition-colors text-sm font-medium"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </button>
-          </div>
-        </aside>
+              <button 
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            </header>
 
-        {/* Main Content */}
-        <main className="flex-1 min-h-screen overflow-auto">
-          <div className="min-h-full">
-            {view === "dashboard" && <Dashboard />}
-            {view === "scanner" && <Scanner />}
-            {view === "register" && <Register />}
-            {view === "students" && <Students />}
-          </div>
-</main>
+            {/* Mobile Overlay */}
+            {sidebarOpen && (
+              <div 
+                className="fixed inset-0 bg-black/50 z-30 md:hidden"
+                onClick={closeSidebar}
+              />
+            )}
+
+            {/* Sidebar */}
+            <aside className={`
+              fixed md:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-200 ease-in-out
+              ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+              md:translate-x-0
+            `}>
+              <div className="p-4 border-b border-gray-100 flex items-center gap-3">
+                <ScanFace className="w-6 h-6 text-gray-900" />
+                <span className="font-semibold text-gray-900 tracking-tight">MC Attendance Box</span>
+              </div>
+              
+              <nav className="flex-1 p-3 space-y-1">
+                <NavItem 
+                  active={view === "dashboard"} 
+                  onClick={() => { setView("dashboard"); closeSidebar(); }} 
+                  icon={<FileBarChart className="w-5 h-5" />}
+                >
+                  Dashboard
+                </NavItem>
+                <NavItem 
+                  active={view === "scanner"} 
+                  onClick={() => { setView("scanner"); closeSidebar(); }} 
+                  icon={<ScanFace className="w-5 h-5" />}
+                >
+                  Scanner
+                </NavItem>
+                <NavItem 
+                  active={view === "register"} 
+                  onClick={() => { setView("register"); closeSidebar(); }} 
+                  icon={<UserPlus className="w-5 h-5" />}
+                >
+                  Register
+                </NavItem>
+                <NavItem 
+                  active={view === "students"} 
+                  onClick={() => { setView("students"); closeSidebar(); }} 
+                  icon={<Users className="w-5 h-5" />}
+                >
+                  Students
+                </NavItem>
+              </nav>
+
+              <div className="p-3 border-t border-gray-100">
+                <div className="flex items-center gap-3 mb-3 px-2">
+                  <img 
+                    src={user.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${user.displayName}`} 
+                    alt="Profile" 
+                    className="w-9 h-9 rounded-full" 
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{user.displayName}</p>
+                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg py-2.5 px-3 transition-colors text-sm font-medium"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              </div>
+            </aside>
+
+            {/* Main Content */}
+            <main className="md:ml-64 min-h-screen">
+              {view === "dashboard" && <Dashboard />}
+              {view === "scanner" && <Scanner />}
+              {view === "register" && <Register />}
+              {view === "students" && <Students />}
+            </main>
           </div>
         </ConfirmDialogProvider>
       </ToastProvider>

@@ -9,6 +9,7 @@ import { Student } from '../types';
 import { Loader2, Camera, ShieldCheck, UserCheck, RotateCcw, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import * as Dialog from '@radix-ui/react-dialog';
+import { useToast } from './Toast';
 
 interface Settings {
   lateCutoffTime: string;
@@ -16,6 +17,7 @@ interface Settings {
 
 export default function Scanner() {
   const { user } = useContext(AuthContext);
+  const { showToast } = useToast();
   const webcamRef = useRef<Webcam>(null);
   
   const [initStatus, setInitStatus] = useState<string>('Loading models...');
@@ -52,8 +54,14 @@ export default function Scanner() {
 
   const saveSettings = async () => {
     if (!user) return;
-    await setDoc(doc(db, 'settings', user.uid), { lateCutoffTime }, { merge: true });
-    setSettingsOpen(false);
+    try {
+      await setDoc(doc(db, 'settings', user.uid), { lateCutoffTime }, { merge: true });
+      setSettingsOpen(false);
+      showToast('Settings saved', 'success');
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to save settings', 'error');
+    }
   };
 
   const isLate = (time: Date): boolean => {
