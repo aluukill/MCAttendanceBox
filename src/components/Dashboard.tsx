@@ -5,6 +5,7 @@ import { AuthContext } from '../App';
 import { Student } from '../types';
 import { Users, UserCheck, UserMinus, AlertTriangle, RefreshCw, ChevronLeft, ChevronRight, Download, Calendar, Clock } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, subMonths, addMonths, isSameDay, parseISO } from 'date-fns';
+import { useToast, useConfirmDialog, ConfirmDialogProvider } from './Toast';
 
 interface AttendanceRecord {
   studentId: string;
@@ -14,6 +15,8 @@ interface AttendanceRecord {
 
 export default function Dashboard() {
   const { user } = useContext(AuthContext);
+  const { showToast } = useToast();
+  const { showConfirm } = useConfirmDialog();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [students, setStudents] = useState<Student[]>([]);
   const [attendance, setAttendance] = useState<Map<string, AttendanceRecord>>(new Map());
@@ -107,48 +110,50 @@ export default function Dashboard() {
   };
 
   const markAbsentees = async () => {
-    if (!user || !window.confirm("Are you sure? This will mark all unscanned students as absent for today.")) return;
-    
-    setProcessingAbsent(true);
-    try {
-      const todayStr = format(new Date(), 'yyyy-MM-dd');
-      
-      const stuQ = query(collection(db, 'students'), where('teacherUid', '==', user.uid));
-      const stuSnap = await getDocs(stuQ);
-      
-      const attQ = query(collection(db, 'attendance_records'), 
-        where('teacherUid', '==', user.uid),
-        where('date', '==', todayStr)
-      );
-      const attSnap = await getDocs(attQ);
-      
-      const loggedStudentIds = new Set();
-      attSnap.forEach(doc => loggedStudentIds.add(doc.data().studentId));
+    await showConfirm({
+      title: 'Mark Absentees',
+      message: 'This will mark all unscanned students as absent for today. This action cannot be undone.',
+      onConfirm: async () => {
+        setProcessingAbsent(true);
+        
+        const todayStr = format(new Date(), 'yyyy-MM-dd');
+        
+        const stuQ = query(collection(db, 'students'), where('teacherUid', '==', user.uid));
+        const stuSnap = await getDocs(stuQ);
+        
+        const attQ = query(collection(db, 'attendance_records'), 
+          where('teacherUid', '==', user.uid),
+          where('date', '==', todayStr)
+        );
+        const attSnap = await getDocs(attQ);
+        
+        const loggedStudentIds = new Set();
+        attSnap.forEach(doc => loggedStudentIds.add(doc.data().studentId));
 
-      const missingStudents: string[] = [];
-      stuSnap.forEach(doc => {
-        if (!loggedStudentIds.has(doc.id)) {
-          missingStudents.push(doc.id);
-        }
-      });
-
-      for (const studentId of missingStudents) {
-        await addDoc(collection(db, 'attendance_records'), {
-          studentId: studentId,
-          date: todayStr,
-          status: 'absent',
-          timestamp: Date.now(),
-          teacherUid: user.uid
+        const missingStudents: string[] = [];
+        stuSnap.forEach(doc => {
+          if (!loggedStudentIds.has(doc.id)) {
+            missingStudents.push(doc.id);
+          }
         });
-      }
 
-      await fetchData();
-    } catch (e) {
-      console.error("Failed to mark absentees", e);
-    } finally {
-      setProcessingAbsent(false);
-    }
+        for (const studentId of missingStudents) {
+          await addDoc(collection(db, 'attendance_records'), {
+            studentId: studentId,
+            date: todayStr,
+            status: 'absent',
+            timestamp: Date.now(),
+            teacherUid: user.uid
+          });
+        }
+
+        await fetchData();
+        showToast('Absentees marked successfully', 'success');
+        setProcessingAbsent(false);
+      }
+    });
   };
+    
 
   const exportData = () => {
     const monthStr = format(currentMonth, 'MMMM yyyy');
@@ -221,7 +226,9 @@ export default function Dashboard() {
     });
 
     navigator.clipboard.writeText(text).then(() => {
-      alert('Data copied to clipboard! You can now paste it into Google Sheets.');
+      showToast('Data copied! Paste into Google Sheets', 'success');
+    }).catch(() => {
+      showToast('Failed to copy data', 'error');
     });
   };
 

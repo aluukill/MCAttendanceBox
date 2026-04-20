@@ -6,6 +6,7 @@ import Dashboard from "./components/Dashboard";
 import Scanner from "./components/Scanner";
 import Register from "./components/Register";
 import Students from "./components/Students";
+import { ToastProvider, ConfirmDialogProvider } from "./components/Toast";
 
 export const AuthContext = createContext<{ user: User | null; loading: boolean }>({ user: null, loading: true });
 
@@ -73,7 +74,9 @@ export default function App() {
 
   return (
     <AuthContext.Provider value={{ user, loading }}>
-      <div className="min-h-screen bg-[#f5f5f5] font-sans">
+      <ToastProvider>
+        <ConfirmDialogProvider>
+          <div className="min-h-screen bg-[#f5f5f5] font-sans flex">
         {/* Mobile Header */}
         <header className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-2">
@@ -161,13 +164,17 @@ export default function App() {
         </aside>
 
         {/* Main Content */}
-        <main className="md:ml-0 min-h-screen">
-          {view === "dashboard" && <Dashboard />}
-          {view === "scanner" && <Scanner />}
-          {view === "register" && <Register />}
-          {view === "students" && <Students />}
-        </main>
-      </div>
+        <main className="flex-1 min-h-screen overflow-auto">
+          <div className="min-h-full">
+            {view === "dashboard" && <Dashboard />}
+            {view === "scanner" && <Scanner />}
+            {view === "register" && <Register />}
+            {view === "students" && <Students />}
+          </div>
+</main>
+          </div>
+        </ConfirmDialogProvider>
+      </ToastProvider>
     </AuthContext.Provider>
   );
 }

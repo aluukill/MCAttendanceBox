@@ -28,6 +28,11 @@ export default function Scanner() {
   const faceMatcherRef = useRef<faceapi.FaceMatcher | null>(null);
   const loggedTodayRef = useRef<Set<string>>(new Set());
   const scanningTimerRef = useRef<any>(null);
+  const lateCutoffTimeRef = useRef(lateCutoffTime);
+
+  useEffect(() => {
+    lateCutoffTimeRef.current = lateCutoffTime;
+  }, [lateCutoffTime]);
 
   const toggleCamera = () => {
     setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
@@ -52,7 +57,8 @@ export default function Scanner() {
   };
 
   const isLate = (time: Date): boolean => {
-    const [hours, minutes] = lateCutoffTime.split(':').map(Number);
+    const cutoffTime = lateCutoffTimeRef.current;
+    const [hours, minutes] = cutoffTime.split(':').map(Number);
     const cutoffDate = new Date(time);
     cutoffDate.setHours(hours, minutes, 0, 0);
     return time > cutoffDate;
@@ -177,7 +183,7 @@ export default function Scanner() {
     return () => {
       if (scanningTimerRef.current) clearInterval(scanningTimerRef.current);
     };
-  }, [isReady, user, lateCutoffTime]);
+  }, [isReady, user]);
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto flex flex-col h-full">
