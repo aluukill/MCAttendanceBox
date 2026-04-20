@@ -171,12 +171,16 @@ export default function Scanner() {
       if (videoEl.readyState !== 4) return;
 
       try {
-        const detections = await faceapi.detectAllFaces(videoEl, new faceapi.SsdMobilenetv1Options())
+        const detections = await faceapi
+          .detectAllFaces(
+            videoEl,
+            new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 })
+          )
           .withFaceLandmarks()
           .withFaceDescriptors();
 
         console.log('Faces detected:', detections.length);
-        
+
         if (detections.length === 0) return;
 
         for (const det of detections) {
@@ -212,7 +216,7 @@ export default function Scanner() {
           }
         }
       } catch (e) {
-        // Silent fail
+        console.error('Face scan error:', e);
       }
     };
 
