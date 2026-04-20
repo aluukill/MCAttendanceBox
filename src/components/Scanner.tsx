@@ -6,7 +6,7 @@ import { db } from '../firebase';
 import { AuthContext } from '../App';
 import { loadFaceApiModels } from '../lib/face-api-loader';
 import { Student } from '../types';
-import { Loader2, Camera, ShieldCheck, UserCheck, RotateCcw, Clock } from 'lucide-react';
+import { Loader2, Camera, ShieldCheck, UserCheck, RotateCcw, Clock, Play } from 'lucide-react';
 import { format } from 'date-fns';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useToast } from './Toast';
@@ -23,6 +23,8 @@ export default function Scanner() {
   const [initStatus, setInitStatus] = useState<string>('Loading models...');
   const [isReady, setIsReady] = useState(false);
   const [scanningStarted, setScanningStarted] = useState(false);
+  const [timeConfigured, setTimeConfigured] = useState(false);
+  const [loadingModels, setLoadingModels] = useState(true);
   const [recognizedStudents, setRecognizedStudents] = useState<{ id: string, name: string, time: Date, status: string, alreadyTracked?: boolean }[]>([]);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -44,17 +46,24 @@ export default function Scanner() {
   useEffect(() => {
     const loadSettings = async () => {
       if (!user) return;
-      const settingsDoc = await getDoc(doc(db, 'settings', user.uid));
-      if (settingsDoc.exists()) {
-        const data = settingsDoc.data() as Settings;
-        setLateCutoffTime(data.lateCutoffTime || '09:00');
+      try {
+        const settingsDoc = await getDoc(doc(db, 'settings', user.uid));
+        if (settingsDoc.exists()) {
+          const data = settingsDoc.data() as Settings;
+          setLateCutoffTime(data.lateCutoffTime || '09:00');
+          setTimeConfigured(true);
+        } else {
+          setSettingsOpen(true);
+        }
+      } catch (e) {
+        console.error(e);
+        setSettingsOpen(true);
       }
     };
     loadSettings();
   }, [user]);
 
   const saveSettings = async () => {
-    console.log('Saving settings, user:', user?.uid, 'time:', lateCutoffTime);
     if (!user || !user.uid) {
       showToast('Not logged in', 'error');
       return;
@@ -62,11 +71,10 @@ export default function Scanner() {
     try {
       const settingsRef = doc(db, 'settings', user.uid);
       await setDoc(settingsRef, { lateCutoffTime }, { merge: true });
-      await new Promise(resolve => setTimeout(resolve, 500));
+      setTimeConfigured(true);
       setSettingsOpen(false);
-      showToast('Settings saved', 'success');
+      showToast('Time set successfully', 'success');
     } catch (e: any) {
-      console.error('Save error:', e);
       showToast('Error: ' + e.message, 'error');
     }
   };
@@ -86,26 +94,28 @@ export default function Scanner() {
       try {
         setInitStatus('Loading neural models...');
         await loadFaceApiModels();
+        setLoadingModels(false);
         
         if (!active) return;
-        setInitStatus('Loading student profiles...');
         
         if (!user) return;
+        
+        setInitStatus('Loading student profiles...');
         
         const q = query(collection(db, 'students'), where('teacherUid', '==', user.uid));
         const snap = await getDocs(q);
         
-        const labeledDescriptors: faceapi.LabeledFaceDescriptors[] = [];
-        snap.forEach(doc => {
-          const data = doc.data() as Student;
-          const descArray = new Float32Array(data.faceDescriptor);
-          labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(doc.id + '||' + data.name, [descArray]));
-        });
-
-        if (labeledDescriptors.length === 0) {
+        if (snap.empty) {
           setInitStatus('No students registered. Please register students first.');
           return;
         }
+        
+        const labeledDescriptors: faceapi.LabeledFaceDescriptors[] = [];
+        snap.forEach(d => {
+          const data = d.data() as Student;
+          const descArray = new Float32Array(data.faceDescriptor);
+          labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(d.id + '||' + data.name, [descArray]));
+        });
 
         faceMatcherRef.current = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
         
@@ -117,20 +127,8 @@ export default function Scanner() {
           where('date', '==', todayStr)
         );
         const attSnap = await getDocs(attQ);
-        attSnap.forEach(doc => {
-          loggedTodayRef.current.add(doc.data().studentId);
-          const attendanceData = doc.data();
-          setRecognizedStudents(prev => {
-            if (!prev.find(s => s.id === attendanceData.studentId)) {
-              return [...prev, {
-                id: attendanceData.studentId,
-                name: attendanceData.studentName,
-                time: new Date(attendanceData.timestamp),
-                status: attendanceData.status
-              }];
-            }
-            return prev;
-          });
+        attSnap.forEach(d => {
+          loggedTodayRef.current.add(d.data().studentId);
         });
 
         setIsReady(true);
@@ -150,9 +148,9 @@ export default function Scanner() {
   }, [user]);
 
   useEffect(() => {
-    if (!isReady || !webcamRef.current || !scanningStarted) return;
+    if (!isReady || !webcamRef.current || !scanningStarted || !faceMatcherRef.current) return;
 
-    scanningTimerRef.current = setInterval(async () => {
+    const scan = async () => {
       if (!webcamRef.current || !webcamRef.current.video) return;
       
       const videoEl = webcamRef.current.video;
@@ -163,9 +161,9 @@ export default function Scanner() {
           .withFaceLandmarks()
           .withFaceDescriptors();
 
-        if (detections.length === 0 || !faceMatcherRef.current) return;
+        if (detections.length === 0) return;
 
-        detections.forEach(async (det) => {
+        for (const det of detections) {
           const bestMatch = faceMatcherRef.current!.findBestMatch(det.descriptor);
           
           if (bestMatch.label !== 'unknown') {
@@ -186,18 +184,21 @@ export default function Scanner() {
                 teacherUid: user?.uid
               });
               
-              setRecognizedStudents(prev => [{ id: studentDocId, name: studentName, time: now, status }, ...prev]);
+              setRecognizedStudents(prev => [{ id: studentDocId, name: studentName, time: now, status, alreadyTracked: false }, ...prev]);
+              showToast(`${studentName} marked as ${status === 'late_present' ? 'Late' : 'Present'}`, 'success');
             } else {
               setRecognizedStudents(prev => prev.map(s => 
                 s.id === studentDocId ? { ...s, alreadyTracked: true } : s
               ));
             }
           }
-        });
+        }
       } catch (e) {
-        // ignore
+        // Silent fail
       }
-    }, 1000);
+    };
+
+    scanningTimerRef.current = setInterval(scan, 1500);
 
     return () => {
       if (scanningTimerRef.current) clearInterval(scanningTimerRef.current);
@@ -209,18 +210,24 @@ export default function Scanner() {
       <div className="flex items-center justify-between mb-6 md:mb-8">
         <div>
           <h2 className="text-xl md:text-2xl font-semibold text-gray-900 tracking-tight">Scanner Mode</h2>
-          <p className="text-gray-500 mt-1">{scanningStarted ? 'Scanning in progress...' : 'Set time first, then start scanning.'}</p>
+          <p className="text-gray-500 mt-1">
+            {!timeConfigured 
+              ? 'Set time first to configure cutoff' 
+              : scanningStarted 
+                ? 'Scanning in progress...'
+                : 'Ready to scan'}
+          </p>
         </div>
         <button
           onClick={() => setSettingsOpen(true)}
-          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+          className={`p-2 rounded-full transition-colors ${timeConfigured ? 'hover:bg-gray-100' : 'bg-amber-100 text-amber-600'}`}
           title="Set late cutoff time"
         >
-          <Clock className="w-5 h-5 text-gray-500" />
+          <Clock className="w-5 h-5" />
         </button>
       </div>
 
-      {!scanningStarted && isReady && (
+      {timeConfigured && isReady && !scanningStarted && (
         <div className="mb-4 flex justify-center">
           <button
             onClick={() => {
@@ -228,7 +235,7 @@ export default function Scanner() {
             }}
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium transition-colors"
           >
-            <Camera className="w-5 h-5" />
+            <Play className="w-5 h-5" />
             Start Scanning
           </button>
         </div>
@@ -236,7 +243,7 @@ export default function Scanner() {
 
       <div className="flex-1 grid md:grid-cols-[2fr_1fr] gap-4 md:gap-8 min-h-[400px] md:min-h-[500px]">
         <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-gray-100 flex flex-col relative overflow-hidden">
-          {!isReady ? (
+          {loadingModels || !isReady ? (
             <div className="flex-1 flex flex-col items-center justify-center text-gray-500 bg-gray-50 rounded-2xl border border-gray-100">
               <Loader2 className="w-8 h-8 animate-spin mb-4 text-gray-900" />
               <p className="font-medium text-sm">{initStatus}</p>
@@ -270,7 +277,7 @@ export default function Scanner() {
                 ) : (
                   <>
                     <div className="w-2 h-2 rounded-full bg-amber-500" />
-                    Ready - Press Start
+                    Ready
                   </>
                 )}
               </div>
@@ -284,39 +291,41 @@ export default function Scanner() {
             <span className="bg-green-100 text-green-800 text-xs font-bold px-2.5 py-0.5 rounded-full">
               {recognizedStudents.filter(e => !e.alreadyTracked).length} new
             </span>
-            {recognizedStudents.some(e => e.alreadyTracked) && (
-              <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-full">
-                {recognizedStudents.filter(e => e.alreadyTracked).length} repeat
-              </span>
-            )}
           </div>
 
           <div className="flex-1 overflow-y-auto pr-2 space-y-2 md:space-y-3 max-h-[200px] md:max-h-none">
-            {recognizedStudents.length === 0 ? (
+            {!timeConfigured ? (
+              <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                <Clock className="w-12 h-12 mb-3 text-gray-200" />
+                <p className="text-sm">Set time first</p>
+              </div>
+            ) : recognizedStudents.filter(e => !e.alreadyTracked).length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-gray-400">
                 <ShieldCheck className="w-12 h-12 mb-3 text-gray-200" />
-                <p className="text-sm">No faces scanned yet today</p>
+                <p className="text-sm">No faces scanned</p>
               </div>
-) : (
-               <>{recognizedStudents.filter(e => !e.alreadyTracked).map((entry, idx) => (
-                  <div key={`${entry.id}-${idx}`} className="flex items-center gap-3 md:gap-4 p-2 md:p-3 bg-gray-50 rounded-xl border border-gray-100 animate-in fade-in slide-in-from-top-2">
-                     <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                       entry.status === 'late_present' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
-                     }`}>
-                       <UserCheck className="w-4 h-4 md:w-5 md:h-5" />
-                     </div>
-                     <div className="flex-1 min-w-0">
-                       <p className="font-medium text-gray-900 truncate">{entry.name}</p>
-                       <p className="text-xs text-gray-500">{format(entry.time, 'h:mm:ss a')}</p>
-                     </div>
-                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                       entry.status === 'late_present' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
-                     }`}>
-                       {entry.status === 'late_present' ? 'Late' : 'Present'}
-                     </span>
+            ) : (
+              <div className="space-y-2 md:space-y-3">
+                {recognizedStudents.filter(e => !e.alreadyTracked).map((entry, idx) => (
+                  <div key={`${entry.id}-${idx}`} className="flex items-center gap-3 md:gap-4 p-2 md:p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      entry.status === 'late_present' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+                    }`}>
+                      <UserCheck className="w-4 h-4 md:w-5 md:h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{entry.name}</p>
+                      <p className="text-xs text-gray-500">{format(entry.time, 'h:mm:ss a')}</p>
+                    </div>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                      entry.status === 'late_present' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+                    }`}>
+                      {entry.status === 'late_present' ? 'Late' : 'Present'}
+                    </span>
                   </div>
-                ))}</>
-             )}
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -325,7 +334,7 @@ export default function Scanner() {
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" />
           <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl p-6 w-full max-w-sm z-50 shadow-2xl">
-            <Dialog.Title className="text-lg font-semibold text-gray-900 mb-4">Late Cutoff Time</Dialog.Title>
+            <Dialog.Title className="text-lg font-semibold text-gray-900 mb-4">Set Late Cutoff Time</Dialog.Title>
             <p className="text-sm text-gray-500 mb-4">Students marked present after this time will be labeled as "Late Present"</p>
             <input
               type="time"
