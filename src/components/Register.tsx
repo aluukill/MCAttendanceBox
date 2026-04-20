@@ -15,13 +15,16 @@ export default function Register() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error' | 'idle', message: string }>({ type: 'idle', message: '' });
   const [showCamera, setShowCamera] = useState(false);
+  const [cameraActive, setCameraActive] = useState(false);
 
-  // Show camera only when both fields have content
-  useEffect(() => {
-    if (name.trim() && studentId.trim()) {
-      setShowCamera(true);
+  const handleOpenCamera = () => {
+    if (!name.trim() || !studentId.trim()) {
+      setStatus({ type: 'error', message: 'Please fill out all fields.' });
+      return;
     }
-  }, [name, studentId]);
+    setCameraActive(true);
+    setShowCamera(true);
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +32,7 @@ export default function Register() {
       setStatus({ type: 'error', message: 'Please fill out all fields.' });
       return;
     }
-    if (!webcamRef.current || !webcamRef.current.video) {
+    if (!cameraActive || !webcamRef.current || !webcamRef.current.video) {
       setStatus({ type: 'error', message: 'Webcam not ready.' });
       return;
     }
@@ -70,6 +73,7 @@ export default function Register() {
       setName('');
       setStudentId('');
       setShowCamera(false);
+      setCameraActive(false);
     } catch (err: any) {
       setStatus({ type: 'error', message: `Error registering student: ${err.message}` });
     } finally {
@@ -145,7 +149,8 @@ export default function Register() {
 
               <button
                 type="submit"
-                disabled={!showCamera || isRegistering}
+                onClick={(e) => { if (!cameraActive) { e.preventDefault(); handleOpenCamera(); } }}
+                disabled={isRegistering}
                 className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 text-white rounded-xl py-3 px-4 md:py-3.5 md:px-6 font-medium transition-colors mt-auto"
               >
                 {isRegistering ? (
@@ -153,10 +158,15 @@ export default function Register() {
                     <Loader2 className="w-5 h-5 animate-spin" />
                     Processing...
                   </>
-                ) : (
+                ) : cameraActive ? (
                   <>
                     <ScanFace className="w-5 h-5" />
                     Capture & Register
+                  </>
+                ) : (
+                  <>
+                    <Camera className="w-5 h-5" />
+                    Open Camera
                   </>
                 )}
               </button>
