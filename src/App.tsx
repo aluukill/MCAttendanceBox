@@ -17,6 +17,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ViewState>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profilePopupOpen, setProfilePopupOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -87,16 +88,31 @@ return (
             <header className="md:hidden bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 sticky top-0 z-30 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gray-900 rounded-xl flex items-center justify-center shadow-lg shadow-gray-900/20">
                     <ScanFace className="w-4 h-4 text-white" />
                   </div>
                   <span className="font-semibold text-gray-900 text-sm">MC Attendance</span>
                 </div>
                 <button 
                   onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                  className={`p-2.5 rounded-xl transition-all duration-200 ${
+                    sidebarOpen 
+                      ? "bg-gray-900 text-white rotate-90" 
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+                  }`}
+                  aria-label="Toggle menu"
                 >
-                  {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                  <div className="relative w-5 h-5">
+                    {sidebarOpen ? (
+                      <X className="w-5 h-5 absolute inset-0" />
+                    ) : (
+                      <div className="flex flex-col justify-center items-center gap-1.5 w-full h-full">
+                        <span className="w-5 h-0.5 bg-current rounded-full"></span>
+                        <span className="w-5 h-0.5 bg-current rounded-full"></span>
+                        <span className="w-3.5 h-0.5 bg-current rounded-full"></span>
+                      </div>
+                    )}
+                  </div>
                 </button>
               </div>
               
@@ -134,23 +150,42 @@ return (
                     </NavItem>
                   </nav>
                   <div className="border-t border-gray-100 mt-2 pt-2 px-4">
-                    <div className="flex items-center gap-3 mb-2">
+                    <button
+                      onClick={() => {
+                        setProfilePopupOpen(!profilePopupOpen);
+                      }}
+                      className="w-full flex items-center gap-3 mb-2 p-2 -mx-2 rounded-xl hover:bg-gray-50 transition-colors"
+                    >
                       <img 
                         src={user.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${user.displayName}`} 
                         alt="Profile" 
-                        className="w-8 h-8 rounded-full" 
+                        className="w-8 h-8 rounded-full ring-2 ring-gray-100" 
                       />
-                      <div className="min-w-0">
+                      <div className="min-w-0 text-left">
                         <p className="text-sm font-medium text-gray-900 truncate">{user.displayName}</p>
+                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
                       </div>
-                    </div>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm font-medium pb-2"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Sign Out
                     </button>
+                    
+                    {/* Mobile Profile Popup */}
+                    {profilePopupOpen && (
+                      <div className="py-2 bg-gray-50 rounded-xl px-2">
+                        <button
+                          onClick={() => { handleLogout(); setProfilePopupOpen(false); setSidebarOpen(false); }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Sign Out
+                        </button>
+                        <button
+                          onClick={() => setProfilePopupOpen(false)}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium"
+                        >
+                          <X className="w-4 h-4" />
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -166,7 +201,7 @@ return (
 
             {/* Sidebar - Desktop only */}
             <aside className={`
-              hidden md:flex fixed md:static inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-100 flex-col
+              hidden md:flex fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-100 flex-col h-screen
             `}>
               <div className="p-5 border-b border-gray-100 flex items-center gap-3 bg-gradient-to-r from-gray-50 to-white">
                 <div className="w-9 h-9 bg-gray-900 rounded-xl flex items-center justify-center shadow-lg shadow-gray-900/20">
@@ -175,7 +210,7 @@ return (
                 <span className="font-semibold text-gray-900 tracking-tight text-base">MC Attendance</span>
               </div>
               
-              <nav className="flex-1 p-4 space-y-1.5">
+              <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
                 <NavItem 
                   active={view === "dashboard"} 
                   onClick={() => setView("dashboard")} 
@@ -207,24 +242,40 @@ return (
               </nav>
 
               <div className="p-4 border-t border-gray-100 bg-gray-50/50">
-                <div className="flex items-center gap-3 mb-3 p-2 rounded-xl bg-white border border-gray-100 shadow-sm">
+                <button
+                  onClick={() => setProfilePopupOpen(!profilePopupOpen)}
+                  className="w-full flex items-center gap-3 p-2 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                >
                   <img 
                     src={user.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${user.displayName}`} 
                     alt="Profile" 
                     className="w-10 h-10 rounded-full ring-2 ring-gray-100" 
                   />
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 text-left">
                     <p className="text-sm font-medium text-gray-900 truncate">{user.displayName}</p>
                     <p className="text-xs text-gray-500 truncate">{user.email}</p>
                   </div>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-2.5 text-gray-600 hover:text-gray-900 hover:bg-white rounded-xl py-2.5 px-3 transition-all text-sm font-medium border border-transparent hover:border-gray-200 shadow-sm"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sign Out
                 </button>
+                
+                {/* Profile Popup */}
+                {profilePopupOpen && (
+                  <div className="mt-2 py-2 bg-white border border-gray-100 rounded-xl shadow-lg">
+                    <button
+                      onClick={() => { handleLogout(); setProfilePopupOpen(false); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors text-sm font-medium"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                    <button
+                      onClick={() => setProfilePopupOpen(false)}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors text-sm font-medium"
+                    >
+                      <X className="w-4 h-4" />
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </div>
             </aside>
 
@@ -239,7 +290,7 @@ return (
             </main>
 
             {/* Footer - Fixed at bottom */}
-            <footer className="fixed bottom-0 left-0 right-0 md:left-64 border-t border-gray-100 bg-white/90 backdrop-blur-md px-6 py-3 z-20">
+            <footer className="fixed bottom-0 right-0 md:left-64 left-0 border-t border-gray-100 bg-white/90 backdrop-blur-md px-6 py-3 z-20">
               <div className="text-center text-sm text-gray-500 max-w-5xl mx-auto">
                 <p className="font-medium text-gray-700">Made by Afnan</p>
                 <p className="mt-1">
