@@ -6,7 +6,7 @@ import { db } from '../firebase';
 import { AuthContext } from '../App';
 import { loadFaceApiModels } from '../lib/face-api-loader';
 import { Student } from '../types';
-import { Loader2, Camera, ShieldCheck, UserCheck, RotateCcw, Clock, Play } from 'lucide-react';
+import { Loader2, Camera, ShieldCheck, UserCheck, RotateCcw, Clock, Play, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useToast } from './Toast';
@@ -30,6 +30,8 @@ export default function Scanner() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showTimePrompt, setShowTimePrompt] = useState(false);
   const [lateCutoffTime, setLateCutoffTime] = useState('09:00');
+  const [webcamError, setWebcamError] = useState<string | null>(null);
+  const [initError, setInitError] = useState(false);
   
   const faceMatcherRef = useRef<faceapi.FaceMatcher | null>(null);
   const loggedTodayRef = useRef<Set<string>>(new Set());
@@ -131,7 +133,7 @@ export default function Scanner() {
         });
         console.log('Loaded', studentCount, 'students with face descriptors');
 
-        faceMatcherRef.current = new faceapi.FaceMatcher(labeledDescriptors, 0.6);
+        faceMatcherRef.current = new faceapi.FaceMatcher(labeledDescriptors, 0.55);
         
         if (!active) return;
         
@@ -174,7 +176,7 @@ export default function Scanner() {
         const detections = await faceapi
           .detectAllFaces(
             videoEl,
-            new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 })
+            new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.3 })
           )
           .withFaceLandmarks()
           .withFaceDescriptors();
@@ -267,8 +269,23 @@ export default function Scanner() {
         <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-gray-100 flex flex-col relative overflow-hidden">
           {loadingModels || !isReady ? (
             <div className="flex-1 flex flex-col items-center justify-center text-gray-500 bg-gray-50 rounded-2xl border border-gray-100">
-              <Loader2 className="w-8 h-8 animate-spin mb-4 text-gray-900" />
-              <p className="font-medium text-sm">{initStatus}</p>
+              {initStatus.includes('failed') || initStatus.includes('No students') ? (
+                <div className="text-center p-4">
+                  <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-4" />
+                  <p className="font-medium text-sm text-red-600 mb-2">{initStatus}</p>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-800"
+                  >
+                    Reload Page
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <Loader2 className="w-8 h-8 animate-spin mb-4 text-gray-900" />
+                  <p className="font-medium text-sm">{initStatus}</p>
+                </>
+              )}
             </div>
           ) : (
             <div className="relative flex-1 bg-black rounded-2xl overflow-hidden flex items-center justify-center">
@@ -280,7 +297,27 @@ export default function Scanner() {
                   videoConstraints={{ facingMode }}
                   mirrored={true}
                   className="w-full h-full object-cover rounded-2xl"
+                  onUserMedia={() => setWebcamError(null)}
+                  onError={(err) => {
+                    console.error('Webcam error:', err);
+                    setWebcamError('Camera access denied or not available. Please allow camera permissions.');
+                  }}
                 />
+                {webcamError && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white p-4">
+                    <Camera className="w-12 h-12 mb-4 text-red-400" />
+                    <p className="text-center text-sm mb-4">{webcamError}</p>
+                    <button
+                      onClick={() => {
+                        setWebcamError(null);
+                        setFacingMode(f => f === 'user' ? 'environment' : 'user');
+                      }}
+                      className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                )}
                 <button
                   onClick={toggleCamera}
                   className="absolute bottom-4 right-4 p-3 bg-white/20 backdrop-blur-md rounded-full hover:bg-white/30 transition-colors"

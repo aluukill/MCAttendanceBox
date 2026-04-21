@@ -17,6 +17,7 @@ export default function Register() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [scanStatus, setScanStatus] = useState<'ready' | 'scanning' | 'success' | 'error'>('ready');
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [webcamError, setWebcamError] = useState<string | null>(null);
 
   const webcamRef = useRef<Webcam>(null);
   const scanIntervalRef = useRef<number | null>(null);
@@ -64,7 +65,7 @@ export default function Register() {
             const detections = await faceapi
               .detectAllFaces(
                 videoEl,
-                new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 })
+                new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.3 })
               )
               .withFaceLandmarks()
               .withFaceDescriptors();
@@ -203,6 +204,11 @@ export default function Register() {
                 videoConstraints={{ facingMode }}
                 mirrored={true}
                 className="w-full h-full object-cover"
+                onUserMedia={() => setWebcamError(null)}
+                onError={(err) => {
+                  console.error('Webcam error:', err);
+                  setWebcamError('Camera access denied. Please allow camera permissions and try again.');
+                }}
               />
               <button
                 onClick={toggleCamera}
@@ -211,6 +217,22 @@ export default function Register() {
                 <RotateCcw className="w-5 h-5 text-white" />
               </button>
               <div className="absolute inset-0 pointer-events-none border-[1px] border-dashed border-white/30 m-8 rounded-full opacity-50" />
+              
+              {webcamError && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white p-4 rounded-2xl">
+                  <Camera className="w-12 h-12 mb-4 text-red-400" />
+                  <p className="text-center text-sm mb-4">{webcamError}</p>
+                  <button
+                    onClick={() => {
+                      setWebcamError(null);
+                      setFacingMode(f => f === 'user' ? 'environment' : 'user');
+                    }}
+                    className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
               
               {scanStatus === 'scanning' && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/70 px-4 py-2 rounded-full">
