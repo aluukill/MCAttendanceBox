@@ -84,34 +84,89 @@ return (
         <ConfirmDialogProvider>
           <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 font-sans">
             {/* Mobile Header */}
-            <header className="md:hidden bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
-                  <ScanFace className="w-4 h-4 text-white" />
+            <header className="md:hidden bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 sticky top-0 z-30 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
+                    <ScanFace className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="font-semibold text-gray-900 text-sm">MC Attendance</span>
                 </div>
-                <span className="font-semibold text-gray-900 text-sm">MC Attendance</span>
+                <button 
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                >
+                  {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                </button>
               </div>
-              <button 
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
-              >
-                {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
+              
+              {/* Mobile Dropdown Menu */}
+              {sidebarOpen && (
+                <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-100 shadow-lg mt-1 py-2 z-50">
+                  <nav className="space-y-1 px-2">
+                    <NavItem 
+                      active={view === "dashboard"} 
+                      onClick={() => { setView("dashboard"); closeSidebar(); }} 
+                      icon={<FileBarChart className="w-5 h-5" />}
+                    >
+                      Dashboard
+                    </NavItem>
+                    <NavItem 
+                      active={view === "scanner"} 
+                      onClick={() => { setView("scanner"); closeSidebar(); }} 
+                      icon={<ScanFace className="w-5 h-5" />}
+                    >
+                      Scanner
+                    </NavItem>
+                    <NavItem 
+                      active={view === "register"} 
+                      onClick={() => { setView("register"); closeSidebar(); }} 
+                      icon={<UserPlus className="w-5 h-5" />}
+                    >
+                      Register
+                    </NavItem>
+                    <NavItem 
+                      active={view === "students"} 
+                      onClick={() => { setView("students"); closeSidebar(); }} 
+                      icon={<Users className="w-5 h-5" />}
+                    >
+                      Students
+                    </NavItem>
+                  </nav>
+                  <div className="border-t border-gray-100 mt-2 pt-2 px-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <img 
+                        src={user.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${user.displayName}`} 
+                        alt="Profile" 
+                        className="w-8 h-8 rounded-full" 
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{user.displayName}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm font-medium pb-2"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
             </header>
 
             {/* Mobile Overlay */}
             {sidebarOpen && (
               <div 
-                className="fixed inset-0 bg-black/50 z-30 md:hidden"
+                className="fixed inset-0 bg-black/50 z-20 md:hidden"
                 onClick={closeSidebar}
               />
             )}
 
-            {/* Sidebar */}
+            {/* Sidebar - Desktop only */}
             <aside className={`
-              fixed md:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-100 flex flex-col transform transition-transform duration-200 ease-in-out
-              ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-              md:translate-x-0
+              hidden md:flex fixed md:static inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-100 flex-col
             `}>
               <div className="p-5 border-b border-gray-100 flex items-center gap-3 bg-gradient-to-r from-gray-50 to-white">
                 <div className="w-9 h-9 bg-gray-900 rounded-xl flex items-center justify-center shadow-lg shadow-gray-900/20">
@@ -123,28 +178,28 @@ return (
               <nav className="flex-1 p-4 space-y-1.5">
                 <NavItem 
                   active={view === "dashboard"} 
-                  onClick={() => { setView("dashboard"); closeSidebar(); }} 
+                  onClick={() => setView("dashboard")} 
                   icon={<FileBarChart className="w-5 h-5" />}
                 >
                   Dashboard
                 </NavItem>
                 <NavItem 
                   active={view === "scanner"} 
-                  onClick={() => { setView("scanner"); closeSidebar(); }} 
+                  onClick={() => setView("scanner")} 
                   icon={<ScanFace className="w-5 h-5" />}
                 >
                   Scanner
                 </NavItem>
                 <NavItem 
                   active={view === "register"} 
-                  onClick={() => { setView("register"); closeSidebar(); }} 
+                  onClick={() => setView("register")} 
                   icon={<UserPlus className="w-5 h-5" />}
                 >
                   Register
                 </NavItem>
                 <NavItem 
                   active={view === "students"} 
-                  onClick={() => { setView("students"); closeSidebar(); }} 
+                  onClick={() => setView("students")} 
                   icon={<Users className="w-5 h-5" />}
                 >
                   Students
@@ -174,20 +229,21 @@ return (
             </aside>
 
             {/* Main Content */}
-            <main className="md:ml-64 min-h-screen pb-20">
-              {view === "dashboard" && <Dashboard />}
-              {view === "scanner" && <Scanner />}
-              {view === "register" && <Register />}
-              {view === "students" && <Students />}
+            <main className="md:ml-64 flex-1 min-h-screen pb-20 md:pb-20">
+              <div className="h-full">
+                {view === "dashboard" && <Dashboard />}
+                {view === "scanner" && <Scanner />}
+                {view === "register" && <Register />}
+                {view === "students" && <Students />}
+              </div>
             </main>
 
             {/* Footer - Fixed at bottom */}
             <footer className="fixed bottom-0 left-0 right-0 md:left-64 border-t border-gray-100 bg-white/90 backdrop-blur-md px-6 py-3 z-20">
               <div className="text-center text-sm text-gray-500 max-w-5xl mx-auto">
-                <span className="font-medium text-gray-700">Made by Afnan</span>
-                <span className="mx-2 text-gray-300">•</span>
-                <span>
-                  Contact:{" "}
+                <p className="font-medium text-gray-700">Made by Afnan</p>
+                <p className="mt-1">
+                  For any help, contact:{" "}
                   <a 
                     href="https://wa.me/+8801607030311" 
                     target="_blank" 
@@ -196,7 +252,7 @@ return (
                   >
                     WhatsApp +880 1607-030311
                   </a>
-                </span>
+                </p>
               </div>
             </footer>
           </div>
