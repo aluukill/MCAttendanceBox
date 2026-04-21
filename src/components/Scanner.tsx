@@ -192,9 +192,38 @@ export default function Scanner() {
           where('date', '==', todayStr)
         );
         const attSnap = await getDocs(attQ);
+        
+        // Check if component is still mounted after async fetch
+        if (!active) return;
+        
+        // Build a map of student IDs to names for quick lookup
+        const studentNameMap = new Map<string, string>();
+        students.forEach(s => studentNameMap.set(s.id, s.name));
+        
+        // Collect all attendance records for today
+        const historicalAttendance: Array<{ id: string; name: string; time: Date; status: string; alreadyTracked?: boolean }> = [];
+        
         attSnap.forEach(d => {
-          loggedTodayRef.current.add(d.data().studentId);
+          const data = d.data();
+          loggedTodayRef.current.add(data.studentId);
+          
+          // Add to recognized students list for display (persist logs for the day)
+          const studentName = studentNameMap.get(data.studentId) || 'Unknown Student';
+          const entryTime = data.timestamp ? new Date(data.timestamp) : new Date();
+          historicalAttendance.push({
+            id: data.studentId,
+            name: studentName,
+            time: entryTime,
+            status: data.status as 'present' | 'late_present',
+            alreadyTracked: false
+          });
         });
+        
+        // Sort by time descending (newest first)
+        historicalAttendance.sort((a, b) => b.time.getTime() - a.time.getTime());
+        
+        // Set all historical records at once
+        setRecognizedStudents(historicalAttendance);
 
         setIsReady(true);
         setInitStatus('');

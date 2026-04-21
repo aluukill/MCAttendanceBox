@@ -19,8 +19,9 @@ export default function Register() {
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [webcamError, setWebcamError] = useState<string | null>(null);
 
-  const webcamRef = useRef<Webcam>(null);
-  const scanIntervalRef = useRef<number | null>(null);
+   const webcamRef = useRef<Webcam>(null);
+   const scanIntervalRef = useRef<number | null>(null);
+   const isProcessingRef = useRef<boolean>(false);
 
   const handleOpenCamera = () => {
     if (!name.trim() || !studentId.trim()) {
@@ -36,6 +37,7 @@ export default function Register() {
       clearInterval(scanIntervalRef.current);
       scanIntervalRef.current = null;
     }
+    isProcessingRef.current = false;
     setIsDialogOpen(false);
   };
 
@@ -61,6 +63,9 @@ export default function Register() {
           const videoEl = webcamRef.current.video;
           if (videoEl.readyState !== 4) return;
 
+          // Prevent race condition: if already processing a face, skip this tick
+          if (isProcessingRef.current) return;
+
           try {
             const detections = await faceapi
               .detectAllFaces(
@@ -81,6 +86,14 @@ export default function Register() {
               clearInterval(scanIntervalRef.current);
               scanIntervalRef.current = null;
             }
+
+            // Second guard: if another tick already started processing, abort
+            if (isProcessingRef.current) {
+              return;
+            }
+
+            // Mark as processing to prevent duplicate detections
+            isProcessingRef.current = true;
 
             const newDescriptor = detections[0].descriptor;
 
@@ -107,6 +120,7 @@ export default function Register() {
             });
 
             if (matchingStudent) {
+              isProcessingRef.current = false;
               setScanStatus('error');
               setStatus({ 
                 type: 'error', 
@@ -128,6 +142,7 @@ export default function Register() {
             });
 
             if (isDuplicate) {
+              isProcessingRef.current = false;
               setScanStatus('error');
               setStatus({ type: 'error', message: 'Student already exists!' });
               setTimeout(() => {
@@ -146,6 +161,7 @@ export default function Register() {
               createdAt: Date.now()
             });
 
+            isProcessingRef.current = false;
             setScanStatus('success');
             setStatus({ type: 'success', message: `Successfully registered ${name}.` });
             setName('');
@@ -157,6 +173,7 @@ export default function Register() {
 
           } catch (e) {
             console.error('Scan error:', e);
+            isProcessingRef.current = false;
           }
         }, 500);
       } catch (err: any) {
