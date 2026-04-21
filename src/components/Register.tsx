@@ -82,12 +82,43 @@ export default function Register() {
               scanIntervalRef.current = null;
             }
 
-            // Check for duplicate student before registering
+            const newDescriptor = detections[0].descriptor;
+
+            // Fetch all existing students for this teacher to check for duplicate face
             const q = query(
               collection(db, 'students'),
               where('teacherUid', '==', user?.uid)
             );
             const existingSnap = await getDocs(q);
+            
+            // Check for face similarity against all existing students
+            const FACE_MATCH_THRESHOLD = 0.6; // Use 0.6 for stricter registration check
+            let matchingStudent: string | null = null;
+            
+            existingSnap.forEach(doc => {
+              const data = doc.data();
+              if (data.faceDescriptor && Array.isArray(data.faceDescriptor) && data.faceDescriptor.length === 128) {
+                const existingDescriptor = new Float32Array(data.faceDescriptor);
+                const distance = faceapi.euclideanDistance(newDescriptor, existingDescriptor);
+                if (distance < FACE_MATCH_THRESHOLD) {
+                  matchingStudent = data.name;
+                }
+              }
+            });
+
+            if (matchingStudent) {
+              setScanStatus('error');
+              setStatus({ 
+                type: 'error', 
+                message: `This face is already registered as '${matchingStudent}'.` 
+              });
+              setTimeout(() => {
+                handleCloseDialog();
+              }, 3000);
+              return;
+            }
+
+            // Check for duplicate studentId or name (case-insensitive)
             let isDuplicate = false;
             existingSnap.forEach(doc => {
               const data = doc.data();
@@ -105,7 +136,7 @@ export default function Register() {
               return;
             }
 
-            const descriptor = Array.from(detections[0].descriptor);
+            const descriptor = Array.from(newDescriptor);
 
             await addDoc(collection(db, 'students'), {
               name,
