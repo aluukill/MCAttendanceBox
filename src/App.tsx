@@ -169,6 +169,24 @@ return (
               {view === "scanner" && <Scanner />}
               {view === "register" && <Register />}
               {view === "students" && <Students />}
+
+              {/* Footer */}
+              <footer className="mt-auto border-t border-gray-200 bg-white px-6 py-4">
+                <div className="text-center text-sm text-gray-500">
+                  <p className="mb-1">Made by Afnan</p>
+                  <p>
+                    For any help, contact:{" "}
+                    <a 
+                      href="https://wa.me/+8801607030311" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-700 hover:underline"
+                    >
+                      WhatsApp +880 1607-030311
+                    </a>
+                  </p>
+                </div>
+              </footer>
             </main>
           </div>
         </ConfirmDialogProvider>
