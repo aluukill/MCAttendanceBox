@@ -174,30 +174,31 @@ return (
             </aside>
 
             {/* Main Content */}
-            <main className="md:ml-64 min-h-screen">
+            <main className="md:ml-64 min-h-screen pb-20">
               {view === "dashboard" && <Dashboard />}
               {view === "scanner" && <Scanner />}
               {view === "register" && <Register />}
               {view === "students" && <Students />}
-
-              {/* Footer */}
-              <footer className="mt-auto border-t border-gray-100 bg-white/50 backdrop-blur-sm px-6 py-5">
-                <div className="text-center text-sm text-gray-500">
-                  <p className="font-medium text-gray-700 mb-1">Made by Afnan</p>
-                  <p>
-                    For any help, contact:{" "}
-                    <a 
-                      href="https://wa.me/+8801607030311" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700 hover:underline"
-                    >
-                      WhatsApp +880 1607-030311
-                    </a>
-                  </p>
-                </div>
-              </footer>
             </main>
+
+            {/* Footer - Fixed at bottom */}
+            <footer className="fixed bottom-0 left-0 right-0 md:left-64 border-t border-gray-100 bg-white/90 backdrop-blur-md px-6 py-3 z-20">
+              <div className="text-center text-sm text-gray-500 max-w-5xl mx-auto">
+                <span className="font-medium text-gray-700">Made by Afnan</span>
+                <span className="mx-2 text-gray-300">•</span>
+                <span>
+                  Contact:{" "}
+                  <a 
+                    href="https://wa.me/+8801607030311" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-700 hover:underline"
+                  >
+                    WhatsApp +880 1607-030311
+                  </a>
+                </span>
+              </div>
+            </footer>
           </div>
         </ConfirmDialogProvider>
       </ToastProvider>
