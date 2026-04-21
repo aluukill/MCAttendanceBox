@@ -43,30 +43,36 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center p-4">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex flex-col items-center justify-center p-4">
+        <div className="w-14 h-14 bg-gradient-to-br from-gray-900 to-gray-700 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-gray-900/20">
+          <ScanFace className="w-7 h-7 text-white" />
+        </div>
+        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] flex flex-col items-center justify-center p-4 sm:p-6">
-        <div className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center max-w-sm w-full">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 sm:mb-6">
-            <ScanFace className="w-7 h-7 sm:w-8 sm:h-8 text-gray-800" />
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex flex-col items-center justify-center p-4 sm:p-6">
+        <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100/50 flex flex-col items-center max-w-sm w-full">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-gray-900 to-gray-700 rounded-2xl flex items-center justify-center mb-5 sm:mb-6 shadow-lg shadow-gray-900/20">
+            <ScanFace className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
           </div>
-          <h1 className="text-xl sm:text-2xl font-medium text-gray-900 mb-2 font-sans tracking-tight">MC Attendance Box</h1>
-          <p className="text-gray-500 text-sm text-center mb-6 sm:mb-8">
-            Face scanning attendance system. Sign in to continue.
+          <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2 tracking-tight">MC Attendance</h1>
+          <p className="text-gray-500 text-sm text-center mb-8 sm:mb-10">
+            Face scanning attendance system for modern classrooms
           </p>
           <button
             onClick={handleLogin}
-            className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 px-6 font-medium transition-colors text-sm sm:text-base"
+            className="w-full flex items-center justify-center gap-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl py-3.5 px-6 font-medium transition-all hover:shadow-xl hover:shadow-gray-900/20 hover:-translate-y-0.5 active:translate-y-0 text-sm sm:text-base"
           >
-            <LogIn className="w-4 h-4" />
+            <LogIn className="w-5 h-5" />
             Sign in with Google
           </button>
+          <p className="text-xs text-gray-400 mt-6 text-center">
+            Secure authentication powered by Firebase
+          </p>
         </div>
       </div>
     );
@@ -76,16 +82,18 @@ return (
     <AuthContext.Provider value={{ user, loading }}>
       <ToastProvider>
         <ConfirmDialogProvider>
-          <div className="min-h-screen bg-[#f5f5f5] font-sans">
+          <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 font-sans">
             {/* Mobile Header */}
-            <header className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
+            <header className="md:hidden bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-sm">
               <div className="flex items-center gap-2">
-                <ScanFace className="w-5 h-5 text-gray-900" />
-                <span className="font-semibold text-gray-900 text-sm">MC Attendance Box</span>
+                <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
+                  <ScanFace className="w-4 h-4 text-white" />
+                </div>
+                <span className="font-semibold text-gray-900 text-sm">MC Attendance</span>
               </div>
               <button 
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
               >
                 {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
@@ -101,16 +109,18 @@ return (
 
             {/* Sidebar */}
             <aside className={`
-              fixed md:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-200 ease-in-out
+              fixed md:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-100 flex flex-col transform transition-transform duration-200 ease-in-out
               ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
               md:translate-x-0
             `}>
-              <div className="p-4 border-b border-gray-100 flex items-center gap-3">
-                <ScanFace className="w-6 h-6 text-gray-900" />
-                <span className="font-semibold text-gray-900 tracking-tight">MC Attendance Box</span>
+              <div className="p-5 border-b border-gray-100 flex items-center gap-3 bg-gradient-to-r from-gray-50 to-white">
+                <div className="w-9 h-9 bg-gray-900 rounded-xl flex items-center justify-center shadow-lg shadow-gray-900/20">
+                  <ScanFace className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-semibold text-gray-900 tracking-tight text-base">MC Attendance</span>
               </div>
               
-              <nav className="flex-1 p-3 space-y-1">
+              <nav className="flex-1 p-4 space-y-1.5">
                 <NavItem 
                   active={view === "dashboard"} 
                   onClick={() => { setView("dashboard"); closeSidebar(); }} 
@@ -141,12 +151,12 @@ return (
                 </NavItem>
               </nav>
 
-              <div className="p-3 border-t border-gray-100">
-                <div className="flex items-center gap-3 mb-3 px-2">
+              <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+                <div className="flex items-center gap-3 mb-3 p-2 rounded-xl bg-white border border-gray-100 shadow-sm">
                   <img 
                     src={user.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${user.displayName}`} 
                     alt="Profile" 
-                    className="w-9 h-9 rounded-full" 
+                    className="w-10 h-10 rounded-full ring-2 ring-gray-100" 
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{user.displayName}</p>
@@ -155,7 +165,7 @@ return (
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg py-2.5 px-3 transition-colors text-sm font-medium"
+                  className="w-full flex items-center gap-2.5 text-gray-600 hover:text-gray-900 hover:bg-white rounded-xl py-2.5 px-3 transition-all text-sm font-medium border border-transparent hover:border-gray-200 shadow-sm"
                 >
                   <LogOut className="w-4 h-4" />
                   Sign Out
@@ -171,9 +181,9 @@ return (
               {view === "students" && <Students />}
 
               {/* Footer */}
-              <footer className="mt-auto border-t border-gray-200 bg-white px-6 py-4">
+              <footer className="mt-auto border-t border-gray-100 bg-white/50 backdrop-blur-sm px-6 py-5">
                 <div className="text-center text-sm text-gray-500">
-                  <p className="mb-1">Made by Afnan</p>
+                  <p className="font-medium text-gray-700 mb-1">Made by Afnan</p>
                   <p>
                     For any help, contact:{" "}
                     <a 

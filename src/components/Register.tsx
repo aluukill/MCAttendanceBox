@@ -5,7 +5,7 @@ import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { AuthContext } from '../App';
 import { loadFaceApiModels } from '../lib/face-api-loader';
-import { Loader2, Camera, CheckCircle2, AlertCircle, ScanFace, User, X, RotateCcw, Search } from 'lucide-react';
+import { Loader2, Camera, CheckCircle2, AlertCircle, ScanFace, User, X, RotateCcw, Search, UserPlus } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 
 export default function Register() {
@@ -147,13 +147,18 @@ export default function Register() {
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto flex flex-col h-full">
-      <div className="mb-8">
-        <h2 className="text-xl md:text-2xl font-semibold text-gray-900 tracking-tight">Register Student</h2>
-        <p className="text-gray-500 mt-1">Enroll a new student. Fill the form and click Open Camera to scan.</p>
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-12 h-12 bg-gradient-to-br from-gray-900 to-gray-700 rounded-2xl flex items-center justify-center shadow-lg shadow-gray-900/20">
+          <UserPlus className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-900 tracking-tight">Register Student</h2>
+          <p className="text-gray-500 mt-0.5">Enroll a new student with face recognition</p>
+        </div>
       </div>
 
       <div className="flex-1 grid md:grid-cols-[2fr_1fr] gap-4 md:gap-8 min-h-[400px] md:min-h-[500px]">
-        <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-gray-100 flex flex-col relative overflow-hidden">
+        <div className="bg-white rounded-3xl p-5 md:p-6 shadow-lg shadow-gray-100/50 border border-gray-100/50 flex flex-col relative overflow-hidden">
           <div className="flex-1 flex flex-col items-center justify-center text-gray-500 bg-gray-50 rounded-2xl border border-gray-100">
             <User className="w-12 h-12 mb-4 text-gray-300" />
             <p className="font-medium text-sm">Fill the form to activate camera</p>
@@ -161,7 +166,7 @@ export default function Register() {
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-gray-100 flex flex-col">
+        <div className="bg-white rounded-3xl p-5 md:p-6 shadow-lg shadow-gray-100/50 border border-gray-100/50 flex flex-col">
           <div className="flex flex-col h-full">
             <div className="space-y-5">
               <div>
@@ -196,7 +201,7 @@ export default function Register() {
                 type="button"
                 onClick={handleOpenCamera}
                 disabled={isRegistering || !name.trim() || !studentId.trim()}
-                className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 text-white rounded-xl py-3 px-4 md:py-3.5 md:px-6 font-medium transition-colors mt-auto"
+                className="w-full flex items-center justify-center gap-2.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl py-3.5 px-6 font-medium transition-all hover:shadow-lg hover:shadow-gray-900/20 hover:-translate-y-0.5 active:translate-y-0 mt-auto"
               >
                 <Camera className="w-5 h-5" />
                 Open Camera

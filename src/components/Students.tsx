@@ -89,13 +89,18 @@ export default function Students() {
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto h-full flex flex-col">
-      <div className="mb-8">
-        <h2 className="text-xl md:text-2xl font-semibold text-gray-900 tracking-tight">Students</h2>
-        <p className="text-gray-500 mt-1">View and manage student records</p>
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-12 h-12 bg-gradient-to-br from-gray-900 to-gray-700 rounded-2xl flex items-center justify-center shadow-lg shadow-gray-900/20">
+          <Users className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-900 tracking-tight">Students</h2>
+          <p className="text-gray-500 mt-0.5">View and manage student records</p>
+        </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex-1 overflow-hidden flex flex-col">
-        <div className="p-4 border-b border-gray-100">
+      <div className="bg-white rounded-3xl shadow-lg shadow-gray-100/50 border border-gray-100/50 flex-1 overflow-hidden flex flex-col">
+        <div className="p-4 md:p-5 border-b border-gray-100 bg-gray-50/50">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -123,11 +128,11 @@ export default function Students() {
           ) : (
             <div className="divide-y divide-gray-100">
               {filteredStudents.map(student => (
-                <div key={student.id} className="p-4 hover:bg-gray-50 transition-colors">
+                <div key={student.id} className="p-4 md:p-5 hover:bg-gray-50/80 transition-all border-b border-gray-50 last:border-0">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4 min-w-0">
-                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <User className="w-6 h-6 text-gray-400" />
+                      <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <User className="w-6 h-6 text-gray-500" />
                       </div>
                       <div className="min-w-0">
                         <p className="font-medium text-gray-900 truncate">{student.name}</p>
