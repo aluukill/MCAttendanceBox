@@ -45,9 +45,7 @@ export default function App() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex flex-col items-center justify-center p-4">
-        <div className="w-14 h-14 bg-gradient-to-br from-gray-900 to-gray-700 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-gray-900/20">
-          <ScanFace className="w-7 h-7 text-white" />
-        </div>
+        <img src="/logo.png" alt="MC Attendance" className="w-14 h-14 object-contain mb-4" />
         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
       </div>
     );
@@ -57,9 +55,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex flex-col items-center justify-center p-4 sm:p-6">
         <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100/50 flex flex-col items-center max-w-sm w-full">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-gray-900 to-gray-700 rounded-2xl flex items-center justify-center mb-5 sm:mb-6 shadow-lg shadow-gray-900/20">
-            <ScanFace className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-          </div>
+          <img src="/logo.png" alt="MC Attendance" className="w-20 h-20 sm:w-24 sm:h-24 object-contain mb-5 sm:mb-6" />
           <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2 tracking-tight">MC Attendance</h1>
           <p className="text-gray-500 text-sm text-center mb-8 sm:mb-10">
             Face scanning attendance system for modern classrooms
@@ -88,9 +84,7 @@ return (
             <header className="md:hidden bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 sticky top-0 z-30 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gray-900 rounded-xl flex items-center justify-center shadow-lg shadow-gray-900/20">
-                    <ScanFace className="w-4 h-4 text-white" />
-                  </div>
+                  <img src="/logo.png" alt="MC Attendance" className="w-8 h-8 rounded-lg object-contain" />
                   <span className="font-semibold text-gray-900 text-sm">MC Attendance</span>
                 </div>
                 <button 
@@ -204,9 +198,7 @@ return (
               hidden md:flex fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-100 flex-col h-screen
             `}>
               <div className="p-5 border-b border-gray-100 flex items-center gap-3 bg-gradient-to-r from-gray-50 to-white">
-                <div className="w-9 h-9 bg-gray-900 rounded-xl flex items-center justify-center shadow-lg shadow-gray-900/20">
-                  <ScanFace className="w-5 h-5 text-white" />
-                </div>
+                <img src="/logo.png" alt="MC Attendance" className="w-9 h-9 rounded-xl object-contain" />
                 <span className="font-semibold text-gray-900 tracking-tight text-base">MC Attendance</span>
               </div>
               
