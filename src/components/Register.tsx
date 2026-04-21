@@ -5,7 +5,7 @@ import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { AuthContext } from '../App';
 import { loadFaceApiModels } from '../lib/face-api-loader';
-import { Loader2, Camera, CheckCircle2, AlertCircle, ScanFace, User, X, RotateCcw } from 'lucide-react';
+import { Loader2, Camera, CheckCircle2, AlertCircle, ScanFace, User, X, RotateCcw, Search } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 
 export default function Register() {
@@ -196,7 +196,7 @@ export default function Register() {
               </Dialog.Close>
             </div>
 
-            <div className="relative aspect-square bg-black rounded-2xl overflow-hidden mb-4 mx-auto max-w-xs">
+            <div className="relative aspect-square bg-gray-900 rounded-2xl overflow-hidden mb-4 mx-auto max-w-xs">
               <Webcam
                 ref={webcamRef}
                 audio={false}
@@ -205,23 +205,69 @@ export default function Register() {
                 mirrored={true}
                 className="w-full h-full object-cover"
                 onUserMedia={() => setWebcamError(null)}
-                onError={(err) => {
-                  console.error('Webcam error:', err);
-                  setWebcamError('Camera access denied. Please allow camera permissions and try again.');
-                }}
+                onError={() => setWebcamError('Camera access denied')}
               />
+              
+              {/* Status Indicator */}
+              <div className="absolute top-4 left-4 right-4">
+                <div className={`flex items-center justify-center gap-2 px-4 py-2 rounded-full backdrop-blur-md ${
+                  scanStatus === 'scanning' ? 'bg-blue-600/90' : 
+                  scanStatus === 'success' ? 'bg-green-600/90' : 
+                  scanStatus === 'error' ? 'bg-red-600/90' : 'bg-gray-800/80'
+                }`}>
+                  {scanStatus === 'scanning' && <Loader2 className="w-4 h-4 animate-spin text-white" />}
+                  {scanStatus === 'success' && <CheckCircle2 className="w-4 h-4 text-white" />}
+                  {scanStatus === 'error' && <AlertCircle className="w-4 h-4 text-white" />}
+                  {scanStatus === 'ready' && <Search className="w-4 h-4 text-white" />}
+                  <span className="text-white text-sm font-medium">
+                    {scanStatus === 'ready' && 'Position your face'}
+                    {scanStatus === 'scanning' && 'Detecting...'}
+                    {scanStatus === 'success' && 'Registered!'}
+                    {scanStatus === 'error' && 'Try again'}
+                  </span>
+                </div>
+              </div>
+
               <button
                 onClick={toggleCamera}
-                className="absolute bottom-4 right-4 p-3 bg-white/20 backdrop-blur-md rounded-full hover:bg-white/30 transition-colors"
+                className="absolute bottom-4 right-4 p-3 bg-white/10 backdrop-blur-md rounded-full hover:bg-white/20 transition-colors"
               >
                 <RotateCcw className="w-5 h-5 text-white" />
               </button>
-              <div className="absolute inset-0 pointer-events-none border-[1px] border-dashed border-white/30 m-8 rounded-full opacity-50" />
-              
+
+              {/* Detection Box */}
+              {(scanStatus === 'scanning' || scanStatus === 'ready') && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-40 h-40 rounded-2xl border-2 border-white/30" />
+                </div>
+              )}
+
+              {/* Success Overlay */}
+              {scanStatus === 'success' && (
+                <div className="absolute inset-0 flex items-center justify-center bg-green-600/80">
+                  <div className="bg-white rounded-2xl p-6 flex flex-col items-center">
+                    <CheckCircle2 className="w-14 h-14 text-green-500 mb-2" />
+                    <p className="font-semibold text-gray-900">Success!</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Overlay */}
+              {scanStatus === 'error' && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+                  <div className="bg-white rounded-2xl p-6 flex flex-col items-center">
+                    <AlertCircle className="w-14 h-14 text-red-500 mb-2" />
+                    <p className="font-semibold text-gray-900 mb-1">Scan Failed</p>
+                    <p className="text-xs text-gray-500">Make sure only one face is visible</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Webcam Error */}
               {webcamError && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white p-4 rounded-2xl">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white">
                   <Camera className="w-12 h-12 mb-4 text-red-400" />
-                  <p className="text-center text-sm mb-4">{webcamError}</p>
+                  <p className="text-sm mb-4 text-center px-4">{webcamError}</p>
                   <button
                     onClick={() => {
                       setWebcamError(null);
@@ -233,39 +279,7 @@ export default function Register() {
                   </button>
                 </div>
               )}
-              
-              {scanStatus === 'scanning' && (
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/70 px-4 py-2 rounded-full">
-                  <Loader2 className="w-4 h-4 animate-spin text-white" />
-                  <span className="text-white text-sm font-medium">Scanning...</span>
-                </div>
-              )}
-              
-              {scanStatus === 'success' && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                  <div className="bg-white rounded-2xl p-6 flex flex-col items-center">
-                    <CheckCircle2 className="w-12 h-12 text-green-500 mb-2" />
-                    <p className="font-medium text-gray-900">Registered!</p>
-                  </div>
-                </div>
-              )}
-
-              {scanStatus === 'error' && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                  <div className="bg-white rounded-2xl p-6 flex flex-col items-center">
-                    <AlertCircle className="w-12 h-12 text-red-500 mb-2" />
-                    <p className="font-medium text-gray-900">Scan Failed</p>
-                  </div>
-                </div>
-              )}
             </div>
-
-            <p className="text-sm text-gray-500 text-center">
-              {scanStatus === 'ready' && 'Position your face in the frame'}
-              {scanStatus === 'scanning' && 'Detecting face...'}
-              {scanStatus === 'success' && 'Student registered successfully!'}
-              {scanStatus === 'error' && 'Please try again'}
-            </p>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
