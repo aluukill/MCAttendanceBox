@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useContext } from 'react';
 import Webcam from 'react-webcam';
 import * as faceapi from '@vladmandic/face-api';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { AuthContext } from '../App';
 import { loadFaceApiModels } from '../lib/face-api-loader';
@@ -80,6 +80,29 @@ export default function Register() {
             if (scanIntervalRef.current) {
               clearInterval(scanIntervalRef.current);
               scanIntervalRef.current = null;
+            }
+
+            // Check for duplicate student before registering
+            const q = query(
+              collection(db, 'students'),
+              where('teacherUid', '==', user?.uid)
+            );
+            const existingSnap = await getDocs(q);
+            let isDuplicate = false;
+            existingSnap.forEach(doc => {
+              const data = doc.data();
+              if (data.studentId === studentId || data.name.toLowerCase() === name.toLowerCase()) {
+                isDuplicate = true;
+              }
+            });
+
+            if (isDuplicate) {
+              setScanStatus('error');
+              setStatus({ type: 'error', message: 'Student already exists!' });
+              setTimeout(() => {
+                handleCloseDialog();
+              }, 2000);
+              return;
             }
 
             const descriptor = Array.from(detections[0].descriptor);

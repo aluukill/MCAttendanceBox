@@ -276,24 +276,32 @@ export default function Scanner() {
             const now = new Date();
             const status = isLate(now) ? 'late_present' : 'present';
             
-            await addDoc(collection(db, 'attendance_records'), {
-              studentId: studentDocId,
-              studentName,
-              date: format(now, 'yyyy-MM-dd'),
-              status,
-              timestamp: Date.now(),
-              teacherUid: user?.uid
-            });
-            
-            setRecognizedStudents(prev => [{ 
-              id: studentDocId, 
-              name: studentName, 
-              time: now, 
-              status, 
-              alreadyTracked: false 
-            }, ...prev]);
-            
-            showToast(`${studentName} marked as ${status === 'late_present' ? 'Late' : 'Present'}`, 'success');
+            try {
+              await addDoc(collection(db, 'attendance_records'), {
+                studentId: studentDocId,
+                studentName,
+                date: format(now, 'yyyy-MM-dd'),
+                status,
+                timestamp: Date.now(),
+                teacherUid: user?.uid
+              });
+              
+              setRecognizedStudents(prev => [{ 
+                id: studentDocId, 
+                name: studentName, 
+                time: now, 
+                status, 
+                alreadyTracked: false 
+              }, ...prev]);
+              
+              showToast(`${studentName} marked as ${status === 'late_present' ? 'Late' : 'Present'}`, 'success');
+            } catch (err: any) {
+              console.error('Failed to save attendance:', err);
+              showToast('Failed to save: ' + (err.message || 'Unknown error'), 'error');
+              // Allow retry by removing from logged set
+              loggedTodayRef.current.delete(studentDocId);
+              lastMatchedRef.current = null;
+            }
             
             // Clear detection display after marking
             setTimeout(() => setCurrentDetection(null), 2000);
@@ -333,10 +341,17 @@ export default function Scanner() {
         </div>
         <button
           onClick={() => setSettingsOpen(true)}
-          className={`p-2.5 rounded-full transition-colors ${timeConfigured ? 'hover:bg-gray-100 text-gray-600' : 'bg-amber-100 text-amber-600'}`}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all ${
+            timeConfigured 
+              ? 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200' 
+              : 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 shadow-sm'
+          }`}
           title="Set late cutoff time"
         >
-          <Clock className="w-5 h-5" />
+          <Clock className="w-4 h-4" />
+          <span className="text-sm font-medium">
+            {timeConfigured ? `Cutoff: ${lateCutoffTime}` : 'Set Time'}
+          </span>
         </button>
       </div>
 
