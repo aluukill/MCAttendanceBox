@@ -139,7 +139,7 @@ export default function Dashboard() {
 
         for (const studentId of missingStudents) {
           await addDoc(collection(db, 'attendance_records'), {
-            studentId: studentId,
+            studentId,
             date: todayStr,
             status: 'absent',
             timestamp: Date.now(),

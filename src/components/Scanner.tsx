@@ -163,6 +163,12 @@ export default function Scanner() {
         });
         
         setLoadedStudents(students);
+        console.log('=== STUDENTS LOADED ===');
+        console.log('Total students from Firestore:', snap.size);
+        console.log('Valid descriptors:', validCount);
+        students.forEach(s => {
+          console.log(`  - ${s.name} (${s.id}): descriptor length ${s.descriptor.length}`);
+        });
         setStudentsCount(validCount);
         
         if (validCount === 0) {
@@ -175,6 +181,7 @@ export default function Scanner() {
           new faceapi.LabeledFaceDescriptors(s.id + '||' + s.name, [s.descriptor])
         );
         faceMatcherRef.current = new faceapi.FaceMatcher(labeledDescriptors, 0.65);
+        console.log('FaceMatcher created with', labeledDescriptors.length, 'labeled descriptors');
         
         if (!active) return;
         
@@ -219,19 +226,10 @@ export default function Scanner() {
     }
 
     const scan = async () => {
-      // Wait for cooldown (3 seconds after a successful match)
-      if (Date.now() - matchCooldownRef.current < 3000 && lastMatchedRef.current) {
-        return;
-      }
-
       if (!webcamRef.current?.video) return;
       
       const videoEl = webcamRef.current.video;
-      if (videoEl.readyState !== 4) {
-        videoReadyRef.current = false;
-        return;
-      }
-      videoReadyRef.current = true;
+      if (videoEl.readyState !== 4) return;
 
       try {
         const detections = await faceapi
@@ -242,6 +240,8 @@ export default function Scanner() {
           .withFaceLandmarks()
           .withFaceDescriptors();
 
+        console.log('Scan tick, detections:', detections.length);
+        
         if (detections.length === 0) {
           setCurrentDetection(null);
           return;
@@ -250,6 +250,8 @@ export default function Scanner() {
         // Process first detected face
         const det = detections[0];
         const bestMatch = faceMatcherRef.current.findBestMatch(det.descriptor);
+        console.log('=== SCAN TICK ===', new Date().toISOString());
+        console.log('Face detected, bestMatch:', bestMatch.label, 'distance:', bestMatch.distance);
         
         if (bestMatch.label === 'unknown') {
           setCurrentDetection({
@@ -257,62 +259,77 @@ export default function Scanner() {
             confidence: (1 - bestMatch.distance) * 100,
             isMatch: false
           });
-        } else {
-          const [studentDocId, studentName] = bestMatch.label.split('||');
-          const confidence = (1 - bestMatch.distance) * 100;
-          
-          setCurrentDetection({
-            name: studentName,
-            confidence,
-            isMatch: true
-          });
-
-          // Only mark attendance if not already logged and not in cooldown
-          if (!loggedTodayRef.current.has(studentDocId) && lastMatchedRef.current !== studentDocId) {
-            loggedTodayRef.current.add(studentDocId);
-            lastMatchedRef.current = studentDocId;
-            resetMatchCooldown();
-            
-            const now = new Date();
-            const status = isLate(now) ? 'late_present' : 'present';
-            
-            try {
-              await addDoc(collection(db, 'attendance_records'), {
-                studentId: studentDocId,
-                studentName,
-                date: format(now, 'yyyy-MM-dd'),
-                status,
-                timestamp: Date.now(),
-                teacherUid: user?.uid
-              });
-              
-              setRecognizedStudents(prev => [{ 
-                id: studentDocId, 
-                name: studentName, 
-                time: now, 
-                status, 
-                alreadyTracked: false 
-              }, ...prev]);
-              
-              showToast(`${studentName} marked as ${status === 'late_present' ? 'Late' : 'Present'}`, 'success');
-            } catch (err: any) {
-              console.error('Failed to save attendance:', err);
-              showToast('Failed to save: ' + (err.message || 'Unknown error'), 'error');
-              // Allow retry by removing from logged set
-              loggedTodayRef.current.delete(studentDocId);
-              lastMatchedRef.current = null;
-            }
-            
-            // Clear detection display after marking
-            setTimeout(() => setCurrentDetection(null), 2000);
-          }
+          return;
         }
-      } catch (e) {
-        console.error('Face scan error:', e);
+
+        const [studentDocId, studentName] = bestMatch.label.split('||');
+        const confidence = (1 - bestMatch.distance) * 100;
+        
+        setCurrentDetection({
+          name: studentName,
+          confidence,
+          isMatch: true
+        });
+
+        // Check if already logged today - use Set.has() BEFORE adding
+        if (loggedTodayRef.current.has(studentDocId)) {
+          return;
+        }
+
+        // Mark as logged IMMEDIATELY to prevent race condition / double registration
+        loggedTodayRef.current.add(studentDocId);
+        
+        const now = new Date();
+        const status = isLate(now) ? 'late_present' : 'present';
+        
+        // Critical: Use user.uid with proper check
+        if (!user?.uid) {
+          console.error('User UID is missing!');
+          showToast('Error: Not logged in properly', 'error');
+          return;
+        }
+        
+        console.log('=== ATTENDANCE SAVE DEBUG ===');
+        console.log('studentDocId:', studentDocId);
+        console.log('studentName:', studentName);
+        console.log('teacherUid:', user?.uid);
+        console.log('Status:', status);
+        
+        // Save to Firestore
+        console.log('Attempting to save attendance record...');
+        await addDoc(collection(db, 'attendance_records'), {
+          studentId: studentDocId,
+          date: format(now, 'yyyy-MM-dd'),
+          status,
+          timestamp: Date.now(),
+          teacherUid: user.uid
+        }).then(() => {
+          console.log('SUCCESS: Attendance saved to Firestore');
+        }).catch((err) => {
+          console.error('FIRESTORE ERROR:', err.code, err.message);
+        });
+        
+        // Update UI state
+        setRecognizedStudents(prev => [{ 
+          id: studentDocId, 
+          name: studentName, 
+          time: now, 
+          status, 
+          alreadyTracked: false 
+        }, ...prev]);
+        
+        showToast(`${studentName} marked as ${status === 'late_present' ? 'Late' : 'Present'}`, 'success');
+        
+        // Clear detection display after marking
+        setTimeout(() => setCurrentDetection(null), 3000);
+
+      } catch (e: any) {
+        console.error('Scan error:', e.message);
+        showToast('Error saving: ' + e.message, 'error');
       }
     };
 
-    scanningTimerRef.current = window.setInterval(scan, 1000);
+    scanningTimerRef.current = window.setInterval(scan, 2000);
 
     return () => {
       if (scanningTimerRef.current) {
