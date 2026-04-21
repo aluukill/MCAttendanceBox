@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useContext } from 'react';
 import Webcam from 'react-webcam';
 import * as faceapi from '@vladmandic/face-api';
-import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, getDocsFromServer } from 'firebase/firestore';
 import { db } from '../firebase';
 import { AuthContext } from '../App';
 import { loadFaceApiModels } from '../lib/face-api-loader';
@@ -98,33 +98,42 @@ export default function Register() {
             const newDescriptor = detections[0].descriptor;
 
             // Fetch all existing students for this teacher to check for duplicate face
+            // Use 'server' source to bypass local cache and get fresh data
             const q = query(
               collection(db, 'students'),
               where('teacherUid', '==', user?.uid)
             );
-            const existingSnap = await getDocs(q);
+            const existingSnap = await getDocsFromServer(q);
+            
+            console.log('=== REGISTRATION DEBUG ===');
+            console.log('Current user UID:', user?.uid);
+            console.log('Total students fetched for this teacher:', existingSnap.size);
             
             // Check for face similarity against all existing students
-            const FACE_MATCH_THRESHOLD = 0.6; // Use 0.6 for stricter registration check
-            let matchingStudent: string | null = null;
+            const FACE_MATCH_THRESHOLD = 0.6;
+            let bestMatch: { name: string; distance: number } | null = null;
             
             existingSnap.forEach(doc => {
               const data = doc.data();
               if (data.faceDescriptor && Array.isArray(data.faceDescriptor) && data.faceDescriptor.length === 128) {
                 const existingDescriptor = new Float32Array(data.faceDescriptor);
                 const distance = faceapi.euclideanDistance(newDescriptor, existingDescriptor);
-                if (distance < FACE_MATCH_THRESHOLD) {
-                  matchingStudent = data.name;
+                console.log(`  Distance to "${data.name}": ${distance.toFixed(4)}`);
+                // Keep track of the closest match
+                if (!bestMatch || distance < bestMatch.distance) {
+                  bestMatch = { name: data.name, distance };
                 }
               }
             });
-
-            if (matchingStudent) {
+            
+            // Only block if the best (closest) match is below threshold
+            if (bestMatch && bestMatch.distance < FACE_MATCH_THRESHOLD) {
+              console.log(`Face matched existing student: "${bestMatch.name}" with distance ${bestMatch.distance.toFixed(4)}`);
               isProcessingRef.current = false;
               setScanStatus('error');
               setStatus({ 
                 type: 'error', 
-                message: `This face is already registered as '${matchingStudent}'.` 
+                message: `This face is already registered as '${bestMatch.name}'.` 
               });
               setTimeout(() => {
                 handleCloseDialog();

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useContext } from 'react';
 import Webcam from 'react-webcam';
 import * as faceapi from '@vladmandic/face-api';
-import { collection, query, where, getDocs, addDoc, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, doc, getDoc, setDoc, getDocsFromServer } from 'firebase/firestore';
 import { db } from '../firebase';
 import { AuthContext } from '../App';
 import { loadFaceApiModels } from '../lib/face-api-loader';
@@ -134,7 +134,7 @@ export default function Scanner() {
         setInitStatus('Loading student profiles...');
         
         const q = query(collection(db, 'students'), where('teacherUid', '==', user.uid));
-        const snap = await getDocs(q);
+        const snap = await getDocsFromServer(q);
         
         if (snap.empty) {
           setInitStatus('No students registered');
@@ -191,7 +191,7 @@ export default function Scanner() {
           where('teacherUid', '==', user.uid),
           where('date', '==', todayStr)
         );
-        const attSnap = await getDocs(attQ);
+        const attSnap = await getDocsFromServer(attQ);
         
         // Check if component is still mounted after async fetch
         if (!active) return;
