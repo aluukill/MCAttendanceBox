@@ -32,6 +32,7 @@ export default function Register() {
     // Reset attempt counter for this registration session
     registrationAttemptRef.current = 0;
     setScanStatus('ready');
+    setStatus({ type: 'idle', message: '' });
     setIsDialogOpen(true);
   };
 
