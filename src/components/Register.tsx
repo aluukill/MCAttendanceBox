@@ -120,10 +120,10 @@ export default function Register() {
             console.log('Total students fetched for this teacher:', existingSnap.size);
             console.log('Registration attempt:', currentAttempt);
 
-            // Check for face similarity AND duplicate studentId/name in a SINGLE loop
+            // Check for face similarity AND duplicate studentId in a SINGLE loop
             const FACE_MATCH_THRESHOLD = 0.6;
             let bestMatch: { name: string; distance: number } | null = null;
-            let isDuplicate = false;
+            let isDuplicateId = false;
 
             existingSnap.forEach(doc => {
               const data = doc.data();
@@ -137,10 +137,9 @@ export default function Register() {
                   bestMatch = { name: data.name, distance };
                 }
               }
-              // Check duplicate studentId or name (both normalized to lowercase)
-              if ((data.studentId && studentId && data.studentId.toLowerCase() === studentId.toLowerCase()) ||
-                  (typeof data.name === 'string' && data.name.trim() && name.trim() && data.name.toLowerCase() === name.toLowerCase())) {
-                isDuplicate = true;
+              // Check duplicate studentId only
+              if (!isDuplicateId && data.studentId && studentId && data.studentId.toLowerCase() === studentId.toLowerCase()) {
+                isDuplicateId = true;
               }
             });
 
@@ -162,11 +161,11 @@ export default function Register() {
               return;
             }
 
-            if (isDuplicate) {
-              console.log(`[Attempt ${currentAttempt}] Duplicate studentId or name found`);
+            if (isDuplicateId) {
+              console.log(`[Attempt ${currentAttempt}] Duplicate studentId found`);
               isProcessingRef.current = false;
               setScanStatus('error');
-              setStatus({ type: 'error', message: 'Student already exists!' });
+              setStatus({ type: 'error', message: 'ID/Roll number already exists!' });
               setTimeout(() => {
                 if (registrationAttemptRef.current === currentAttempt) {
                   handleCloseDialog();
