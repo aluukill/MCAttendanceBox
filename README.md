@@ -86,7 +86,13 @@ npm install
 config/firebase-applet-config.json
 ```
 
-5. Set Firestore rules to allow authenticated access
+5. Deploy the Firestore security rules — the rules file is already included:
+
+```
+config/firestore.rules
+```
+
+> **Hosting?** If you're deploying to a custom domain or any web host, go to Firebase Console → **Authentication → Settings → Authorized domains** and add your domain.
 
 ### 4. Run
 
