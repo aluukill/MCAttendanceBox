@@ -22,12 +22,15 @@ export default function Register() {
    const webcamRef = useRef<Webcam>(null);
    const scanIntervalRef = useRef<number | null>(null);
    const isProcessingRef = useRef<boolean>(false);
+   const registrationAttemptRef = useRef<number>(0);
 
   const handleOpenCamera = () => {
     if (!name.trim() || !studentId.trim()) {
       setStatus({ type: 'error', message: 'Please fill out all fields.' });
       return;
     }
+    // Reset attempt counter for this registration session
+    registrationAttemptRef.current = 0;
     setScanStatus('ready');
     setIsDialogOpen(true);
   };
@@ -82,6 +85,8 @@ export default function Register() {
               return;
             }
 
+            // Clear interval immediately to prevent any further ticks from starting
+            // This must happen BEFORE we mark as processing, to close the race window
             if (scanIntervalRef.current) {
               clearInterval(scanIntervalRef.current);
               scanIntervalRef.current = null;
@@ -92,7 +97,11 @@ export default function Register() {
               return;
             }
 
-            // Mark as processing to prevent duplicate detections
+            // Increment attempt counter to identify this registration attempt
+            registrationAttemptRef.current += 1;
+            const currentAttempt = registrationAttemptRef.current;
+
+            // Mark as processing to prevent duplicate detections within this attempt
             isProcessingRef.current = true;
 
             const newDescriptor = detections[0].descriptor;
@@ -104,17 +113,20 @@ export default function Register() {
               where('teacherUid', '==', user?.uid)
             );
             const existingSnap = await getDocsFromServer(q);
-            
+
             console.log('=== REGISTRATION DEBUG ===');
             console.log('Current user UID:', user?.uid);
             console.log('Total students fetched for this teacher:', existingSnap.size);
-            
-            // Check for face similarity against all existing students
+            console.log('Registration attempt:', currentAttempt);
+
+            // Check for face similarity AND duplicate studentId/name in a SINGLE loop
             const FACE_MATCH_THRESHOLD = 0.6;
             let bestMatch: { name: string; distance: number } | null = null;
-            
+            let isDuplicate = false;
+
             existingSnap.forEach(doc => {
               const data = doc.data();
+              // Check face similarity
               if (data.faceDescriptor && Array.isArray(data.faceDescriptor) && data.faceDescriptor.length === 128) {
                 const existingDescriptor = new Float32Array(data.faceDescriptor);
                 const distance = faceapi.euclideanDistance(newDescriptor, existingDescriptor);
@@ -124,38 +136,40 @@ export default function Register() {
                   bestMatch = { name: data.name, distance };
                 }
               }
-            });
-            
-            // Only block if the best (closest) match is below threshold
-            if (bestMatch && bestMatch.distance < FACE_MATCH_THRESHOLD) {
-              console.log(`Face matched existing student: "${bestMatch.name}" with distance ${bestMatch.distance.toFixed(4)}`);
-              isProcessingRef.current = false;
-              setScanStatus('error');
-              setStatus({ 
-                type: 'error', 
-                message: `This face is already registered as '${bestMatch.name}'.` 
-              });
-              setTimeout(() => {
-                handleCloseDialog();
-              }, 3000);
-              return;
-            }
-
-            // Check for duplicate studentId or name (case-insensitive)
-            let isDuplicate = false;
-            existingSnap.forEach(doc => {
-              const data = doc.data();
-              if (data.studentId === studentId || data.name.toLowerCase() === name.toLowerCase()) {
+              // Check duplicate studentId or name (both normalized to lowercase)
+              if ((data.studentId && studentId && data.studentId.toLowerCase() === studentId.toLowerCase()) ||
+                  (typeof data.name === 'string' && data.name.trim() && name.trim() && data.name.toLowerCase() === name.toLowerCase())) {
                 isDuplicate = true;
               }
             });
 
+            // Only block if the best (closest) match is below threshold
+            if (bestMatch && bestMatch.distance < FACE_MATCH_THRESHOLD) {
+              console.log(`[Attempt ${currentAttempt}] Face matched existing student: "${bestMatch.name}" with distance ${bestMatch.distance.toFixed(4)}`);
+              isProcessingRef.current = false;
+              setScanStatus('error');
+              setStatus({
+                type: 'error',
+                message: `This face is already registered as '${bestMatch.name}'.`
+              });
+              setTimeout(() => {
+                // Only close if this is still the latest attempt
+                if (registrationAttemptRef.current === currentAttempt) {
+                  handleCloseDialog();
+                }
+              }, 3000);
+              return;
+            }
+
             if (isDuplicate) {
+              console.log(`[Attempt ${currentAttempt}] Duplicate studentId or name found`);
               isProcessingRef.current = false;
               setScanStatus('error');
               setStatus({ type: 'error', message: 'Student already exists!' });
               setTimeout(() => {
-                handleCloseDialog();
+                if (registrationAttemptRef.current === currentAttempt) {
+                  handleCloseDialog();
+                }
               }, 2000);
               return;
             }
@@ -170,6 +184,7 @@ export default function Register() {
               createdAt: Date.now()
             });
 
+            console.log(`[Attempt ${currentAttempt}] Successfully registered ${name}`);
             isProcessingRef.current = false;
             setScanStatus('success');
             setStatus({ type: 'success', message: `Successfully registered ${name}.` });
@@ -177,7 +192,9 @@ export default function Register() {
             setStudentId('');
 
             setTimeout(() => {
-              handleCloseDialog();
+              if (registrationAttemptRef.current === currentAttempt) {
+                handleCloseDialog();
+              }
             }, 1500);
 
           } catch (e) {
