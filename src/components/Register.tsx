@@ -2,9 +2,9 @@ import { useState, useRef, useEffect, useContext } from 'react';
 import Webcam from 'react-webcam';
 import * as faceapi from '@vladmandic/face-api';
 import { collection, addDoc, getDocs, query, where, getDocsFromServer } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../services/firebase';
 import { AuthContext } from '../App';
-import { loadFaceApiModels } from '../lib/face-api-loader';
+import { loadFaceApiModels } from '../utils/face-api-loader';
 import { Loader2, Camera, CheckCircle2, AlertCircle, ScanFace, User, X, RotateCcw, Search, UserPlus } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 

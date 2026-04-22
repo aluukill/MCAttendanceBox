@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext } from 'react';
 import { collection, query, where, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../services/firebase';
 import { AuthContext } from '../App';
 import { Student } from '../types';
 import { Users, Search, Edit2, Trash2, X, Loader2, Save, User, Phone, Mail, Calendar } from 'lucide-react';
