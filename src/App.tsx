@@ -284,16 +284,16 @@ return (
             {/* Footer - Fixed at bottom */}
             <footer className="fixed bottom-0 right-0 md:left-64 left-0 border-t border-gray-100 bg-white/90 backdrop-blur-md px-6 py-3 z-20">
               <div className="text-center text-sm text-gray-500 max-w-5xl mx-auto">
-                <p className="font-medium text-gray-700">Made by Afnan</p>
+                <p className="font-medium text-gray-700">Made by Syed Tanvir Islam</p>
                 <p className="mt-1">
                   For any help, contact:{" "}
                   <a 
-                    href="https://wa.me/+8801607030311" 
+                    href="https://wa.me/+8801921575251" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:text-blue-700 hover:underline"
                   >
-                    WhatsApp +880 1607-030311
+                    WhatsApp +880 1921-575251
                   </a>
                 </p>
               </div>
