@@ -16,13 +16,21 @@ export default function Register() {
   const [status, setStatus] = useState<{ type: 'success' | 'error' | 'idle', message: string }>({ type: 'idle', message: '' });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [scanStatus, setScanStatus] = useState<'ready' | 'scanning' | 'success' | 'error'>('ready');
+  const [scanErrorMessage, setScanErrorMessage] = useState('Make sure only one face is visible');
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [webcamError, setWebcamError] = useState<string | null>(null);
+  const [pendingClear, setPendingClear] = useState(false);
 
    const webcamRef = useRef<Webcam>(null);
    const scanIntervalRef = useRef<number | null>(null);
    const isProcessingRef = useRef<boolean>(false);
    const registrationAttemptRef = useRef<number>(0);
+   const nameRef = useRef(name);
+   const studentIdRef = useRef(studentId);
+
+   // Keep refs in sync with state
+   nameRef.current = name;
+   studentIdRef.current = studentId;
 
   const handleOpenCamera = () => {
     if (!name.trim() || !studentId.trim()) {
@@ -43,6 +51,12 @@ export default function Register() {
     }
     isProcessingRef.current = false;
     setIsDialogOpen(false);
+    // Clear form fields after dialog closes if registration was successful
+    if (pendingClear) {
+      setName('');
+      setStudentId('');
+      setPendingClear(false);
+    }
   };
 
   const toggleCamera = () => {
@@ -82,6 +96,7 @@ export default function Register() {
             if (detections.length === 0) return;
 
             if (detections.length > 1) {
+              setScanErrorMessage('Make sure only one face is visible');
               setScanStatus('error');
               return;
             }
@@ -113,6 +128,7 @@ export default function Register() {
               collection(db, 'students'),
               where('teacherUid', '==', user?.uid)
             );
+            const currentStudentId = studentIdRef.current;
             const existingSnap = await getDocsFromServer(q);
 
             console.log('=== REGISTRATION DEBUG ===');
@@ -138,7 +154,7 @@ export default function Register() {
                 }
               }
               // Check duplicate studentId only
-              if (!isDuplicateId && data.studentId && studentId && data.studentId.toLowerCase() === studentId.toLowerCase()) {
+              if (!isDuplicateId && data.studentId && currentStudentId && data.studentId.toLowerCase() === currentStudentId.toLowerCase()) {
                 isDuplicateId = true;
               }
             });
@@ -147,6 +163,7 @@ export default function Register() {
             if (bestMatch && bestMatch.distance < FACE_MATCH_THRESHOLD) {
               console.log(`[Attempt ${currentAttempt}] Face matched existing student: "${bestMatch.name}" with distance ${bestMatch.distance.toFixed(4)}`);
               isProcessingRef.current = false;
+              setScanErrorMessage(`This face is already registered as '${bestMatch.name}'`);
               setScanStatus('error');
               setStatus({
                 type: 'error',
@@ -164,6 +181,7 @@ export default function Register() {
             if (isDuplicateId) {
               console.log(`[Attempt ${currentAttempt}] Duplicate studentId found`);
               isProcessingRef.current = false;
+              setScanErrorMessage('ID/Roll number already exists');
               setScanStatus('error');
               setStatus({ type: 'error', message: 'ID/Roll number already exists!' });
               setTimeout(() => {
@@ -175,21 +193,23 @@ export default function Register() {
             }
 
             const descriptor = Array.from(newDescriptor);
+            const currentName = nameRef.current;
+            const currentStudentIdForSave = studentIdRef.current;
 
             await addDoc(collection(db, 'students'), {
-              name,
-              studentId,
+              name: currentName,
+              studentId: currentStudentIdForSave,
               faceDescriptor: descriptor,
               teacherUid: user?.uid,
               createdAt: Date.now()
             });
 
-            console.log(`[Attempt ${currentAttempt}] Successfully registered ${name}`);
+            console.log(`[Attempt ${currentAttempt}] Successfully registered ${currentName}`);
             isProcessingRef.current = false;
             setScanStatus('success');
-            setStatus({ type: 'success', message: `Successfully registered ${name}.` });
-            setName('');
-            setStudentId('');
+            setStatus({ type: 'success', message: `Successfully registered ${currentName}.` });
+            // Mark for clearing after dialog closes — don't clear now to avoid retriggering the effect
+            setPendingClear(true);
 
             setTimeout(() => {
               if (registrationAttemptRef.current === currentAttempt) {
@@ -217,7 +237,7 @@ export default function Register() {
         scanIntervalRef.current = null;
       }
     };
-  }, [isDialogOpen, name, studentId, user]);
+  }, [isDialogOpen, user]);
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto flex flex-col h-full">
@@ -360,7 +380,7 @@ export default function Register() {
                   <div className="bg-white rounded-2xl p-6 flex flex-col items-center">
                     <AlertCircle className="w-14 h-14 text-red-500 mb-2" />
                     <p className="font-semibold text-gray-900 mb-1">Scan Failed</p>
-                    <p className="text-xs text-gray-500">Make sure only one face is visible</p>
+                    <p className="text-xs text-gray-500">{scanErrorMessage}</p>
                   </div>
                 </div>
               )}
