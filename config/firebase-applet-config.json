@@ -1,10 +1,9 @@
 {
-  "projectId": "gen-lang-client-0333771974",
-  "appId": "1:909467565966:web:af35b3e8c940f8dde42edf",
-  "apiKey": "AIzaSyBPYohmqGZffIgNjWAfVqka6KhtQpxPHLo",
-  "authDomain": "gen-lang-client-0333771974.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-cc879cca-6368-4868-9f5b-4f6f925d8679",
-  "storageBucket": "gen-lang-client-0333771974.firebasestorage.app",
-  "messagingSenderId": "909467565966",
+  "projectId": "mc-attendance-box",
+  "appId": "1:567394457134:web:ba050ea7b08f9207b471bf",
+  "apiKey": "AIzaSyA2gWztIJuho0VC6jrBXE4_2yVhCtRt7_8",
+  "authDomain": "mc-attendance-box.firebaseapp.com",
+  "storageBucket": "mc-attendance-box.firebasestorage.app",
+  "messagingSenderId": "567394457134",
   "measurementId": ""
 }
