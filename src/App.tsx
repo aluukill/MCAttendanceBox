@@ -20,7 +20,7 @@ export default function App() {
   const [profilePopupOpen, setProfilePopupOpen] = useState(false);
 
   const handleAboutClick = () => {
-    window.open('/About/about.html', '_blank');
+    window.open('https://aboutmcatcbox.vercel.app/', '_blank');
   };
 
   useEffect(() => {
